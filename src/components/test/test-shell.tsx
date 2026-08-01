@@ -5,6 +5,7 @@ import { textFor } from "@/components/admin/question-dialog";
 import { localeOptions, Locale } from "@/i18n/dictionaries";
 import { useLanguage } from "@/i18n/language-provider";
 import { CheckCircle2, XCircle, LogOut, Flag, Car, Bookmark, X, ZoomIn } from "lucide-react";
+import { exitFullscreen } from "@/lib/fullscreen";
 
 export type ShellOption = { id: string; optionTextJson: any };
 export type ShellQuestion = { id: string; textJson: any; imageUrl: string | null; options: ShellOption[] };
@@ -19,6 +20,7 @@ export function TestShell({
   answers,
   currentIndex,
   confirmMode,
+  enforceFocus = false,
   onAnswer,
   onNavigate,
   onFinish,
@@ -30,6 +32,7 @@ export function TestShell({
   answers: Record<string, ShellAnswer>;
   currentIndex: number;
   confirmMode: "dialog" | "direct";
+  enforceFocus?: boolean;
   onAnswer: (questionId: string, optionId: string) => Promise<void> | void;
   onNavigate: (index: number) => void;
   onFinish: () => void;
@@ -42,6 +45,9 @@ export function TestShell({
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [savingBookmark, setSavingBookmark] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"finish" | "exit" | null>(null);
+  const [focusWarning, setFocusWarning] = useState(false);
+  const hiddenAtRef = useRef<number | null>(null);
+  const violationCountRef = useRef(0);
   const [zoomOpen, setZoomOpen] = useState(false);
   const activeRef = useRef<string | null>(null);
   const finishedRef = useRef(false);
@@ -107,6 +113,27 @@ export function TestShell({
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
   }, []);
+
+  useEffect(() => {
+    if (!enforceFocus) return;
+
+    function handleVisibility() {
+      if (document.hidden) {
+        hiddenAtRef.current = Date.now();
+      } else if (hiddenAtRef.current) {
+        hiddenAtRef.current = null;
+        violationCountRef.current += 1;
+        if (violationCountRef.current >= 2) {
+          onFinish();
+        } else {
+          setFocusWarning(true);
+        }
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    return () => document.removeEventListener("visibilitychange", handleVisibility);
+  }, [enforceFocus, onFinish]);
 
   useEffect(() => {
     setPendingOptionId(null);
@@ -292,7 +319,7 @@ export function TestShell({
       </div>
 
       {/* SAVOLLAR PANELI — o'ng-pastki burchakda, alohida quti */}
-      <div className="fixed bottom-6 right-6 z-30 max-w-xs rounded-xl bg-black/40 p-3 backdrop-blur-sm">
+      <div className="static mt-2 w-full rounded-xl bg-black/40 p-3 backdrop-blur-sm sm:fixed sm:bottom-6 sm:right-6 sm:z-30 sm:mt-0 sm:w-auto sm:max-w-xs">
         <div className="flex max-w-[16rem] flex-wrap justify-end gap-1.5">
           {questions.map((qq, i) => {
             const ans = answers[qq.id];
@@ -389,6 +416,7 @@ export function TestShell({
                 onClick={() => {
                   const action = confirmAction;
                   setConfirmAction(null);
+                  exitFullscreen();
                   if (action === "finish") onFinish();
                   else onExit();
                 }}
@@ -397,6 +425,25 @@ export function TestShell({
                 Ha, tasdiqlash
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {focusWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-sm rounded-2xl bg-red-500/95 p-6 text-center shadow-2xl">
+            <p className="text-base font-semibold text-white">Ogohlantirish!</p>
+            <p className="mt-2 text-sm text-white/90">
+              Siz sahifadan chiqib ketdingiz. Imtihon davomida boshqa tab yoki oynaga o'tish taqiqlanadi.
+              Yana takrorlansa, test avtomatik yakunlanadi.
+            </p>
+            <button
+              type="button"
+              onClick={() => setFocusWarning(false)}
+              className="mt-4 w-full rounded-xl bg-white/15 py-2.5 text-sm font-medium text-white hover:bg-white/25"
+            >
+              Tushundim
+            </button>
           </div>
         </div>
       )}

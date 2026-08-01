@@ -16,6 +16,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const userId = (session.user as any).id as string;
 
   const { id: stageId } = await params;
+  const body = await req.json().catch(() => ({}));
+  const mode = body?.mode === 50 ? 50 : 20;
+  const timeLimitSec = mode === 50 ? 45 * 60 : 20 * 60;
+
   const stage = await prisma.stage.findUnique({ where: { id: stageId } });
   if (!stage) return new Response("Not found", { status: 404 });
 
@@ -32,7 +36,6 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   });
   const mistakeMap = new Map(mistakes.map((m) => [m.questionId, m.mistakeCount]));
 
-  // Foydalanuvchi bu savolni necha marta ishlaganini o'tgan natijalar orqali taxminiy hisoblaymiz
   const priorResults = await prisma.testResult.findMany({
     where: { userId },
     select: { answersLog: true },
@@ -50,7 +53,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   function priorityScore(questionId: string) {
     const mistakeWeight = (mistakeMap.get(questionId) ?? 0) * 10;
     const seenPenalty = seenCount.get(questionId) ?? 0;
-    return mistakeWeight - seenPenalty; // yuqori ball = ustunlik
+    return mistakeWeight - seenPenalty;
   }
 
   const sorted = [...questions].sort((a, b) => priorityScore(b.id) - priorityScore(a.id));
@@ -58,14 +61,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const rest = sorted.slice(Math.ceil(sorted.length * 0.6));
   const finalOrder = shuffle([...shuffle(topPriority), ...shuffle(rest)]);
 
-  const timeLimitSec = (stage.timeLimit20 ?? 20) * 60;
+  const selected = finalOrder.slice(0, Math.min(mode, finalOrder.length));
 
-  const safeQuestions = finalOrder.map((q) => ({
+  const safeQuestions = selected.map((q) => ({
     id: q.id,
     textJson: q.textJson,
     imageUrl: q.imageUrl,
     options: shuffle(q.options).map((o) => ({ id: o.id, optionTextJson: o.optionTextJson })),
   }));
 
-  return Response.json({ questions: safeQuestions, timeLimitSec, stageId });
+  return Response.json({ questions: shuffle(safeQuestions), timeLimitSec, stageId });
 }

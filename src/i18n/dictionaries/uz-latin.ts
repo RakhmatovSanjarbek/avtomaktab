@@ -15,7 +15,9 @@ export const uzLatin: Dictionary = {
     loginButton: "Kirish",
     loggingIn: "Tekshirilmoqda...",
     errorInvalid: "Telefon raqam yoki parol noto'g'ri.",
-    errorDeviceMismatch: "Ushbu profil boshqa qurilmaga biriktirilgan. Admin bilan bog'laning.",
+    errorDeviceMismatch: "Siz boshqa qurilmadan kirmoqdasiz. Ushbu hisob faqat birinchi marta ro'yxatdan o'tgan qurilmangizdan ishlaydi. Yordam uchun admin bilan bog'laning.",
+    errorRateLimited: "Juda ko'p noto'g'ri urinish qildingiz. {minutes} daqiqadan keyin qayta urinib ko'ring.",
+    deviceOwnConfirm: "Bu — siz birinchi marta ro'yxatdan o'tgan qurilmangiz.",
     noAccount: "Hisobingiz yo'qmi? Admin bilan bog'laning",
   },
   topbar: {

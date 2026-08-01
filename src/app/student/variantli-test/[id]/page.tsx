@@ -6,6 +6,7 @@ import { useLanguage } from "@/i18n/language-provider";
 import { Trophy, Loader2, Play, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { TestShell, ShellQuestion, ShellAnswer } from "@/components/test/test-shell";
+import { enterFullscreen } from "@/lib/fullscreen";
 
 type Session = {
   questions: ShellQuestion[];
@@ -48,6 +49,7 @@ export default function VariantTestPage() {
   }
 
   async function startTest() {
+    enterFullscreen();
     setLoadingStart(true);
     try {
       const res = await fetch(`/api/variantli/${variantId}/start`, { method: "POST" });

@@ -19,20 +19,19 @@ function shuffle<T>(arr: T[]): T[] {
 
 /**
  * TZ 5.4 — Weighting System:
- * Manba: FAQAT Variantli test (VARIANT) bazasi — boshqa modul (Ta'lim, Bosqichli) savollari
- * bu yerga hech qachon aralashmaydi.
- * 70-75% savollar 1- va 2-variantdan, qolgan 25-30% boshqa variantlardan.
+ * Manba: FAQAT Bosqichli test (STAGE) bo'limidagi mavzular.
+ * 70-75% savollar 1- va 2-bosqichdan, qolgan 25-30% boshqa bosqichlardan.
  * Har ikki guruh ichida ham foydalanuvchi hali yechmagan / kam ishlagan savollarga ustunlik beriladi.
  */
 export async function buildExamQuestionSet(totalCount: 20 | 50, userId: string): Promise<ExamQuestion[]> {
-  const variants = await prisma.stage.findMany({
-    where: { type: "VARIANT" },
+  const topics = await prisma.stage.findMany({
+    where: { type: "STAGE" },
     orderBy: { levelOrder: "asc" },
   });
 
-  const primaryVariantIds = variants.slice(0, 2).map((v) => v.id);
-  const secondaryVariantIds = variants.slice(2).map((v) => v.id);
-  const allVariantIds = variants.map((v) => v.id);
+  const primaryTopicIds = topics.slice(0, 2).map((t) => t.id);
+  const secondaryTopicIds = topics.slice(2).map((t) => t.id);
+  const allTopicIds = topics.map((t) => t.id);
 
   const primaryRatio = 0.7 + Math.random() * 0.05; // 70-75%
   const primaryCount = Math.round(totalCount * primaryRatio);
@@ -50,12 +49,10 @@ export async function buildExamQuestionSet(totalCount: 20 | 50, userId: string):
     }
   }
 
-  // Variantli test bazasidagi BARCHA savollarni bir marta yuklab olamiz (fallback ham shundan foydalanadi)
-  const allVariantLinks = await prisma.stageQuestion.findMany({
-    where: { stageId: { in: allVariantIds } },
+  const allTopicLinks = await prisma.stageQuestion.findMany({
+    where: { stageId: { in: allTopicIds } },
     include: { question: { include: { options: true } } },
   });
-  const allVariantQuestionsMap = new Map(allVariantLinks.map((l) => [l.questionId, l.question]));
 
   function orderBySeenPriority(questions: any[]) {
     const withSeen = questions.map((q) => ({ q, seen: seenCount.get(q.id) ?? 0 }));
@@ -73,26 +70,26 @@ export async function buildExamQuestionSet(totalCount: 20 | 50, userId: string):
     return ordered;
   }
 
-  function pickFromVariantIds(variantIds: string[], count: number, excludeIds: Set<string>): any[] {
-    if (variantIds.length === 0 || count <= 0) return [];
-    const links = allVariantLinks.filter((l) => variantIds.includes(l.stageId) && !excludeIds.has(l.questionId));
+  function pickFromTopicIds(topicIds: string[], count: number, excludeIds: Set<string>): any[] {
+    if (topicIds.length === 0 || count <= 0) return [];
+    const links = allTopicLinks.filter((l) => topicIds.includes(l.stageId) && !excludeIds.has(l.questionId));
     const uniqueQuestions = Array.from(new Map(links.map((l) => [l.questionId, l.question])).values());
     return orderBySeenPriority(uniqueQuestions).slice(0, count);
   }
 
   const usedIds = new Set<string>();
-  const primary = pickFromVariantIds(primaryVariantIds, primaryCount, usedIds);
+  const primary = pickFromTopicIds(primaryTopicIds, primaryCount, usedIds);
   primary.forEach((q) => usedIds.add(q.id));
 
-  const secondary = pickFromVariantIds(secondaryVariantIds, secondaryCount, usedIds);
+  const secondary = pickFromTopicIds(secondaryTopicIds, secondaryCount, usedIds);
   secondary.forEach((q) => usedIds.add(q.id));
 
   let combined = [...primary, ...secondary];
 
-  // Agar hali ham yetarli bo'lmasa — FAQAT variant havzasidan (boshqa modullardan EMAS) to'ldiramiz
   if (combined.length < totalCount) {
     const missing = totalCount - combined.length;
-    const remainingPool = [...allVariantQuestionsMap.values()].filter((q) => !usedIds.has(q.id));
+    const allTopicQuestionsMap = new Map(allTopicLinks.map((l) => [l.questionId, l.question]));
+    const remainingPool = [...allTopicQuestionsMap.values()].filter((q) => !usedIds.has(q.id));
     const extra = orderBySeenPriority(remainingPool).slice(0, missing);
     combined = [...combined, ...extra];
   }

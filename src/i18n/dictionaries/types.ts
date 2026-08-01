@@ -3,7 +3,7 @@ export interface Dictionary {
   auth: {
     title: string; subtitle: string; phoneLabel: string; phonePlaceholder: string;
     passwordLabel: string; loginButton: string; loggingIn: string; errorInvalid: string;
-    errorDeviceMismatch: string; noAccount: string;
+    errorDeviceMismatch: string; errorRateLimited: string; deviceOwnConfirm: string; noAccount: string;
   };
   topbar: { admin: string; student: string; logout: string };
   dashboard: {

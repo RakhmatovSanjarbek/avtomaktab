@@ -3,6 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { prisma } from "./lib/prisma";
 import { verifyOrAssignDevice, DeviceMismatchError } from "./lib/device-guard";
+import { checkRateLimit, resetRateLimit } from "./lib/rate-limit";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   session: { strategy: "jwt" },
@@ -23,11 +24,19 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
         if (!phone || !password || !deviceId) return null;
 
+        const rateLimitKey = `login:${phone}`;
+        const rate = checkRateLimit(rateLimitKey);
+        if (!rate.allowed) {
+          throw new Error(`RATE_LIMITED:${rate.retryAfterSec}`);
+        }
+
         const user = await prisma.user.findUnique({ where: { phone } });
         if (!user) return null;
 
         const isValid = await bcrypt.compare(password, user.passwordHash);
         if (!isValid) return null;
+
+        resetRateLimit(rateLimitKey);
 
         try {
           await verifyOrAssignDevice(user.id, deviceId);

@@ -3,9 +3,10 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useLanguage } from "@/i18n/language-provider";
-import { Trophy, Loader2, Play, ArrowLeft } from "lucide-react";
+import { Trophy, Loader2, Layers } from "lucide-react";
 import Link from "next/link";
 import { TestShell, ShellQuestion, ShellAnswer } from "@/components/test/test-shell";
+import { enterFullscreen } from "@/lib/fullscreen";
 
 type Session = {
   questions: ShellQuestion[];
@@ -47,10 +48,15 @@ export default function TopicTestPage() {
     localStorage.setItem(storageKey, JSON.stringify(next));
   }
 
-  async function startTest() {
+  async function startTest(mode: 20 | 50) {
+    enterFullscreen();
     setLoadingStart(true);
     try {
-      const res = await fetch(`/api/bosqichli/${topicId}/start`, { method: "POST" });
+      const res = await fetch(`/api/bosqichli/${topicId}/start`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
+      });
       const data = await res.json();
       persist({ questions: data.questions, timeLimitSec: data.timeLimitSec, startedAt: Date.now(), answers: {}, currentIndex: 0 });
     } finally {
@@ -118,9 +124,9 @@ export default function TopicTestPage() {
         <p className="mt-2 text-4xl font-bold text-foreground">{finished.score} / {finished.total}</p>
         <p className="mt-1 text-sm text-muted-foreground">{percent}%</p>
         <div className="mt-8 flex justify-center gap-3">
-          <button type="button" onClick={() => router.back()} className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary">
+          <Link href="/student/bosqichli-test" className="rounded-xl border border-border px-5 py-2.5 text-sm font-medium text-foreground hover:bg-secondary">
             {t("test.backToDashboard")}
-          </button>
+          </Link>
           <button type="button" onClick={() => setFinished(null)} className="rounded-xl bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">
             {t("test.retakeButton")}
           </button>
@@ -132,26 +138,30 @@ export default function TopicTestPage() {
   if (!session) {
     return (
       <div className="mx-auto max-w-md py-16 text-center">
-      <button
-        type="button"
-        onClick={() => router.back()}
-        className="mb-6 inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Ortga
-      </button>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10">
-          <Play className="h-8 w-8 text-primary" strokeWidth={1.75} />
+          <Layers className="h-8 w-8 text-primary" strokeWidth={1.75} />
         </div>
-        <button
-          type="button"
-          disabled={loadingStart}
-          onClick={startTest}
-          className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
-        >
-          {loadingStart && <Loader2 className="h-4 w-4 animate-spin" />}
-          {t("studentVariantli.startTestButton")}
-        </button>
+        <h1 className="text-xl font-semibold text-foreground">{t("test.chooseModeTitle")}</h1>
+        <div className="mt-6 space-y-3">
+          <button
+            type="button"
+            disabled={loadingStart}
+            onClick={() => startTest(20)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-border bg-card py-3.5 text-sm font-medium text-foreground shadow-sm hover:bg-secondary disabled:opacity-50"
+          >
+            {loadingStart && <Loader2 className="h-4 w-4 animate-spin" />}
+            {t("test.mode20Label")}
+          </button>
+          <button
+            type="button"
+            disabled={loadingStart}
+            onClick={() => startTest(50)}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3.5 text-sm font-medium text-primary-foreground hover:opacity-90 disabled:opacity-50"
+          >
+            {loadingStart && <Loader2 className="h-4 w-4 animate-spin" />}
+            {t("test.mode50Label")}
+          </button>
+        </div>
       </div>
     );
   }

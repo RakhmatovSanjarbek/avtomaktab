@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useLanguage } from "@/i18n/language-provider";
 import { textFor } from "@/components/admin/question-dialog";
 import { ArrowLeft, Image as ImageIcon, ListChecks, X } from "lucide-react";
+import { enterFullscreen } from "@/lib/fullscreen";
 
 type Material = { id: string; titleJson: any; imageUrl: string | null };
 
@@ -81,6 +82,7 @@ export function TalimStageDetail({ stageId }: { stageId: string }) {
         <div className="flex justify-center pt-2">
           <Link
             href={`/student/talim/${stageId}/korish`}
+            onClick={() => enterFullscreen()}
             className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg hover:opacity-90"
           >
             <ListChecks className="h-4 w-4" />

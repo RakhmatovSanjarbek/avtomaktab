@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useLanguage } from "@/i18n/language-provider";
 import { textFor } from "@/components/admin/question-dialog";
 import { ArrowLeft, CheckCircle2, Play } from "lucide-react";
+import { enterFullscreen } from "@/lib/fullscreen";
 
 type Option = { id: string; optionTextJson: any; isCorrect: boolean };
 type Question = { id: string; textJson: any; explanationJson: any; imageUrl: string | null; options: Option[] };
@@ -88,6 +89,7 @@ export function TalimMemorizeView({ stageId }: { stageId: string }) {
           <div className="mx-auto flex max-w-3xl justify-center">
             <Link
               href={`/student/talim/${stageId}/test`}
+              onClick={() => enterFullscreen()}
               className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg hover:opacity-90"
             >
               <Play className="h-4 w-4" />

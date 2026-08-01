@@ -6,6 +6,7 @@ import { useLanguage } from "@/i18n/language-provider";
 import { Trophy, Loader2, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { TestShell, ShellQuestion, ShellAnswer } from "@/components/test/test-shell";
+import { enterFullscreen } from "@/lib/fullscreen";
 
 const STORAGE_KEY = "exam_session_yakuniy";
 
@@ -46,6 +47,7 @@ export default function YakuniyImtihonPage() {
   }
 
   async function startExam(mode: 20 | 50) {
+    enterFullscreen();
     setLoadingStart(true);
     try {
       const res = await fetch("/api/exam/start", {
@@ -176,6 +178,7 @@ export default function YakuniyImtihonPage() {
       answers={session.answers}
       currentIndex={session.currentIndex}
       confirmMode="dialog"
+      enforceFocus
       onAnswer={handleAnswer}
       onNavigate={(i) => persist({ ...session, currentIndex: i })}
       onFinish={() => finishTest(session)}

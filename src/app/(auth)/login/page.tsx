@@ -27,6 +27,27 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
+    // Avval maxsus tekshiruv — aniq xato sababini olish uchun
+    const precheckRes = await fetch("/api/auth/precheck", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ phone, password, deviceId }),
+    });
+    const precheck = await precheckRes.json();
+
+    if (!precheck.ok) {
+      setLoading(false);
+      if (precheck.code === "RATE_LIMITED") {
+        const minutes = Math.max(Math.ceil((precheck.retryAfterSec ?? 0) / 60), 1);
+        setError(t("auth.errorRateLimited").replace("{minutes}", String(minutes)));
+      } else if (precheck.code === "DEVICE_MISMATCH") {
+        setError(t("auth.errorDeviceMismatch"));
+      } else {
+        setError(t("auth.errorInvalid"));
+      }
+      return;
+    }
+
     const result = await signIn("credentials", {
       phone,
       password,
@@ -36,11 +57,7 @@ export default function LoginPage() {
 
     if (result?.error) {
       setLoading(false);
-      setError(
-        result.error.includes("DEVICE_MISMATCH")
-          ? t("auth.errorDeviceMismatch")
-          : t("auth.errorInvalid")
-      );
+      setError(t("auth.errorInvalid"));
       return;
     }
 

@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useLanguage } from "@/i18n/language-provider";
 import { textFor } from "@/lib/text-for";
 import { CheckCircle2, AlertTriangle, Play, Loader2 } from "lucide-react";
+import { enterFullscreen } from "@/lib/fullscreen";
 
 type Option = { id: string; optionTextJson: any; isCorrect: boolean };
 type Question = { id: string; textJson: any; imageUrl: string | null; options: Option[] };
@@ -23,6 +24,7 @@ export function MistakesView() {
   }, []);
 
   function startPractice() {
+    enterFullscreen();
     setStarting(true);
     window.location.href = "/student/profil/xatolar/test";
   }
