@@ -1,0 +1,200 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// ENUM'LAR
+// ==========================================
+
+enum Role {
+  STUDENT
+  ADMIN
+}
+
+enum StageType {
+  TRAINING // Ta'lim moduli (bosqichli o'quv)
+  VARIANT  // Variantli test (asosiy savollar bazasi)
+  STAGE    // Bosqichli test (mavzuli)
+  EXAM     // Yakuniy imtihon
+}
+
+// ==========================================
+// FOYDALANUVCHI VA DEVICE GUARD
+// ==========================================
+
+model User {
+  id             String   @id @default(cuid())
+  phone          String   @unique
+  passwordHash   String
+  fullName       String
+  groupName      String?
+  role           Role     @default(STUDENT)
+
+  // Device Guard tizimi
+  deviceId       String?  // UUIDv4 — birinchi kirishda biriktiriladi
+  isDeviceLocked Boolean  @default(false)
+
+  // Til sozlamasi (oxirgi tanlangan til saqlanadi)
+  preferredLang  String   @default("uz-latin") // uz-latin | uz-cyrl | ru
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  savedQuestions SavedQuestion[]
+  mistakes       UserMistake[]
+  testResults    TestResult[]
+
+  @@map("users")
+}
+
+// ==========================================
+// MASTER SAVOLLAR BAZASI
+// ==========================================
+
+model Category {
+  id        String     @id @default(cuid())
+  titleJson Json       // { "uzLatin": "...", "uzCyrl": "...", "ru": "..." }
+  order     Int        @default(0)
+
+  questions Question[]
+
+  @@map("categories")
+}
+
+model Question {
+  id              String   @id @default(cuid())
+  textJson        Json     // { "uzLatin": "...", "uzCyrl": "...", "ru": "..." }
+  explanationJson Json?    // { "uzLatin": "...", "uzCyrl": "...", "ru": "..." }
+  imageUrl        String?
+
+  categoryId      String?
+  category        Category? @relation(fields: [categoryId], references: [id])
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  options         Option[]
+  savedBy         SavedQuestion[]
+  mistakesOf      UserMistake[]
+  stageLinks      StageQuestion[]
+
+  @@map("questions")
+}
+
+model Option {
+  id             String   @id @default(cuid())
+  questionId     String
+  question       Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  optionTextJson Json     // { "uzLatin": "...", "uzCyrl": "...", "ru": "..." }
+  isCorrect      Boolean  @default(false)
+  order          Int      @default(0)
+
+  @@map("options")
+}
+
+// ==========================================
+// BOSQICH / VARIANT / MODUL STRUKTURASI
+// ==========================================
+
+model Stage {
+  id         String    @id @default(cuid())
+  titleJson  Json      // { "uzLatin": "...", "uzCyrl": "...", "ru": "..." }
+  descJson   Json?     // umumiy tavsif
+  levelOrder Int       @default(0)
+  type       StageType
+
+  timeLimit20 Int?     @default(20) // 20 savol / 20 daqiqa
+  timeLimit50 Int?     @default(45) // 50 savol / 45 daqiqa
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  questions  StageQuestion[]
+  testResults TestResult[]
+  materials  TrainingMaterial[]
+
+  @@map("stages")
+}
+
+// Stage va Question orasidagi many-to-many bog'lanish
+model StageQuestion {
+  id         String   @id @default(cuid())
+  stageId    String
+  stage      Stage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([stageId, questionId])
+  @@map("stage_questions")
+}
+
+// ==========================================
+// SHAXSIY KABINET: SAQLANGAN VA XATO SAVOLLAR
+// ==========================================
+
+model SavedQuestion {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  savedAt    DateTime @default(now())
+
+  @@unique([userId, questionId])
+  @@map("saved_questions")
+}
+
+model UserMistake {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionId    String
+  question      Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  mistakeCount  Int      @default(1)
+  lastMistakeAt DateTime @default(now())
+  isResolved    Boolean  @default(false) // to'g'ri javob berilsa true bo'ladi
+
+  @@unique([userId, questionId])
+  @@map("user_mistakes")
+}
+
+// ==========================================
+// TEST NATIJALARI
+// ==========================================
+
+model TestResult {
+  id             String   @id @default(cuid())
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  stageId        String?
+  stage          Stage?   @relation(fields: [stageId], references: [id])
+
+  totalQuestions Int
+  score          Int
+  timeSpentSec   Int
+  answersLog     Json     // [{ questionId, selectedOptionId, isCorrect }]
+
+  createdAt      DateTime @default(now())
+
+  @@map("test_results")
+}
+model TrainingMaterial {
+  id              String   @id @default(cuid())
+  stageId         String
+  stage           Stage    @relation(fields: [stageId], references: [id], onDelete: Cascade)
+  titleJson       Json
+  descriptionJson Json?
+  imageUrl        String?
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  @@map("training_materials")
+}

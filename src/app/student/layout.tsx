@@ -1,0 +1,28 @@
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
+import { Topbar } from "@/components/layout/topbar";
+
+export default async function StudentLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect("/login");
+  }
+  if ((session.user as any).role === "ADMIN") {
+    redirect("/admin");
+  }
+
+  return (
+    <div className="min-h-screen bg-background">
+      <Topbar
+        fullName={session.user.name ?? ""}
+        role={(session.user as any).role ?? "STUDENT"}
+      />
+      <main className="mx-auto max-w-5xl px-4 py-8">{children}</main>
+    </div>
+  );
+}
