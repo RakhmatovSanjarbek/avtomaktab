@@ -13,6 +13,19 @@ export type ShellAnswer = { selectedOptionId: string; isCorrect: boolean; correc
 
 const FKEYS = ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9"];
 
+// Rasm biriktirilmagan savollar uchun standart rasm.
+// Fayl yo'lini o'zgartirish uchun shu manzilga rasm yuklang: public/defaults/question-default.png
+const DEFAULT_QUESTION_IMAGE = "/defaults/question-default.jpeg";
+
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 export function TestShell({
   questions,
   timeLimitSec,
@@ -45,16 +58,19 @@ export function TestShell({
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set());
   const [savingBookmark, setSavingBookmark] = useState(false);
   const [confirmAction, setConfirmAction] = useState<"finish" | "exit" | null>(null);
+  const [zoomOpen, setZoomOpen] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [displayOptions, setDisplayOptions] = useState<ShellOption[]>(() => shuffleArray(questions[currentIndex].options));
   const [focusWarning, setFocusWarning] = useState(false);
   const hiddenAtRef = useRef<number | null>(null);
   const violationCountRef = useRef(0);
-  const [zoomOpen, setZoomOpen] = useState(false);
   const activeRef = useRef<string | null>(null);
   const finishedRef = useRef(false);
 
   const q = questions[currentIndex];
   const answered = answers[q.id];
   const isSaved = savedIds.has(q.id);
+  const displayImage = imageError ? null : (q.imageUrl || DEFAULT_QUESTION_IMAGE);
 
   useEffect(() => {
     const ids = questions.map((qq) => qq.id);
@@ -139,6 +155,9 @@ export function TestShell({
     setPendingOptionId(null);
     activeRef.current = null;
     setZoomOpen(false);
+    setImageError(false);
+    setDisplayOptions(shuffleArray(questions[currentIndex].options));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentIndex]);
 
   const commitAnswer = useCallback(
@@ -256,10 +275,10 @@ export function TestShell({
         </button>
       </div>
 
-      {/* CONTENT */}
-      <div className="flex flex-1 gap-6 px-6 py-6 pb-32">
-        <div className="flex w-full max-w-md shrink-0 flex-col gap-3">
-          {q.options.map((o, i) => {
+      {/* CONTENT: variantlar + rasm (kattaroq) */}
+      <div className="flex flex-col gap-4 px-6 py-6 lg:flex-row lg:gap-6">
+        <div className="flex w-full flex-col gap-3 lg:max-w-md">
+          {displayOptions.map((o, i) => {
             const isPending = pendingOptionId === o.id;
             const isSelected = answered?.selectedOptionId === o.id;
             const isCorrectOption = answered?.correctOptionId === o.id;
@@ -291,36 +310,38 @@ export function TestShell({
           })}
         </div>
 
-        <div className="relative hidden h-[420px] flex-1 items-center justify-center sm:flex">
-          <div className="absolute right-0 top-0 z-10 rounded-lg bg-black/60 px-3 py-1.5 text-sm font-bold">
+        {/* RASM — har doim bir xil ramkali, markazlashgan katta quti */}
+        <div className="relative mx-auto h-[300px] w-full max-w-2xl overflow-hidden rounded-2xl border-2 border-white/10 bg-white/5 sm:h-[420px] lg:h-[560px] lg:flex-1">
+          <div className="absolute right-2 top-2 z-10 rounded-lg bg-black/60 px-3 py-1.5 text-sm font-bold">
             {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
           </div>
-          {q.imageUrl ? (
+          {displayImage ? (
             <button
               type="button"
               onClick={() => setZoomOpen(true)}
-              className="group relative flex h-full max-h-full items-center justify-center"
+              className="group relative block h-full w-full"
             >
-              <img src={q.imageUrl} alt="" className="max-h-full max-w-full object-contain transition-transform group-hover:scale-[1.02]" />
+              <img
+                src={displayImage}
+                alt=""
+                onError={() => setImageError(true)}
+                className="h-full w-full object-cover transition-transform group-hover:scale-[1.02]"
+              />
               <span className="absolute bottom-2 right-2 flex items-center gap-1 rounded-lg bg-black/60 px-2 py-1 text-xs text-white/80 opacity-0 transition-opacity group-hover:opacity-100">
                 <ZoomIn className="h-3.5 w-3.5" /> Kattalashtirish
               </span>
             </button>
           ) : (
-            <div className="flex h-40 w-40 items-center justify-center rounded-full border-2 border-white/10 bg-white/5">
-              <Car className="h-20 w-20 text-white/40" strokeWidth={1.25} />
+            <div className="flex h-full w-full items-center justify-center">
+              <Car className="h-24 w-24 text-white/40" strokeWidth={1.1} />
             </div>
           )}
         </div>
-
-        <div className="fixed right-6 top-20 rounded-lg bg-black/60 px-3 py-1.5 text-sm font-bold sm:hidden">
-          {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-        </div>
       </div>
 
-      {/* SAVOLLAR PANELI — o'ng-pastki burchakda, alohida quti */}
-      <div className="static mt-2 w-full rounded-xl bg-black/40 p-3 backdrop-blur-sm sm:fixed sm:bottom-6 sm:right-6 sm:z-30 sm:mt-0 sm:w-auto sm:max-w-xs">
-        <div className="flex max-w-[16rem] flex-wrap justify-end gap-1.5">
+      {/* SAVOLLAR PANELI — rasm ostida, markazda, oddiy oqimda */}
+      <div className="flex justify-center px-6 pb-8 pt-2">
+        <div className="flex max-w-4xl flex-wrap justify-center gap-1.5">
           {questions.map((qq, i) => {
             const ans = answers[qq.id];
             const isCurrent = i === currentIndex;
@@ -333,7 +354,7 @@ export function TestShell({
                 type="button"
                 onClick={() => onNavigate(i)}
                 style={{ borderRadius: "6px" }}
-                className={`flex h-7 w-7 items-center justify-center text-xs font-semibold transition-colors ${bg} ${
+                className={`flex h-7 w-7 shrink-0 items-center justify-center text-[11px] font-semibold transition-colors sm:h-8 sm:w-8 sm:text-xs ${bg} ${
                   isCurrent ? "outline outline-2 outline-offset-1 outline-white" : ""
                 }`}
               >
@@ -344,8 +365,7 @@ export function TestShell({
         </div>
       </div>
 
-      {/* RASM ZOOM MODAL */}
-      {zoomOpen && q.imageUrl && (
+      {zoomOpen && displayImage && (
         <div
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 px-4"
           onClick={() => setZoomOpen(false)}
@@ -358,7 +378,7 @@ export function TestShell({
             <X className="h-5 w-5" />
           </button>
           <img
-            src={q.imageUrl}
+            src={displayImage}
             alt=""
             onClick={(e) => e.stopPropagation()}
             className="max-h-[90vh] max-w-[90vw] object-contain"
@@ -366,7 +386,6 @@ export function TestShell({
         </div>
       )}
 
-      {/* JAVOBNI TASDIQLASH DIALOGI */}
       {confirmMode === "dialog" && pendingOptionId && !answered && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-[#2b4fc9] p-6 text-center shadow-2xl">
@@ -377,7 +396,7 @@ export function TestShell({
               onClick={() => commitAnswer(pendingOptionId)}
               className="mt-3 w-full rounded-xl bg-white/10 px-4 py-3 text-sm font-medium transition-colors hover:bg-white/20"
             >
-              {textFor(q.options.find((o) => o.id === pendingOptionId)?.optionTextJson, locale)}
+              {textFor(displayOptions.find((o) => o.id === pendingOptionId)?.optionTextJson, locale)}
             </button>
             <p className="mt-3 text-xs text-white/60">Tasdiqlash uchun yana bir marta bosing</p>
             <button
@@ -391,7 +410,6 @@ export function TestShell({
         </div>
       )}
 
-      {/* CHIQISH / YAKUNLASH TASDIQLASH DIALOGI */}
       {confirmAction && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-[#151d38] p-6 text-center shadow-2xl">

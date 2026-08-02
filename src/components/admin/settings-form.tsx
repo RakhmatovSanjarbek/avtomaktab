@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useLanguage } from "@/i18n/language-provider";
 import { Loader2 } from "lucide-react";
 
-export function SettingsForm({ currentName }: { currentName: string }) {
+export function SettingsForm({ currentName, currentEmail }: { currentName: string; currentEmail: string }) {
   const { t } = useLanguage();
   const [fullName, setFullName] = useState(currentName);
+  const [email, setEmail] = useState(currentEmail);
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ type: "success" | "error"; text: string } | null>(null);
@@ -18,8 +19,12 @@ export function SettingsForm({ currentName }: { currentName: string }) {
       const res = await fetch("/api/admin/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fullName, password }),
+        body: JSON.stringify({ fullName, email, password }),
       });
+      if (res.status === 409) {
+        setToast({ type: "error", text: t("admin.settings.emailTakenError") });
+        return;
+      }
       if (!res.ok) throw new Error();
       setToast({ type: "success", text: t("admin.settings.saveSuccess") });
       setPassword("");
@@ -39,6 +44,16 @@ export function SettingsForm({ currentName }: { currentName: string }) {
           <input
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
+            className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/50"
+          />
+        </div>
+        <div>
+          <label className="mb-1.5 block text-sm font-medium text-foreground">{t("admin.settings.emailLabel")}</label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="admin@misol.uz"
             className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/50"
           />
         </div>

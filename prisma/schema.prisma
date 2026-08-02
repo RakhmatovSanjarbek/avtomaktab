@@ -31,6 +31,7 @@ enum StageType {
 model User {
   id             String   @id @default(cuid())
   phone          String   @unique
+  email          String?  @unique
   passwordHash   String
   fullName       String
   groupName      String?
@@ -197,4 +198,26 @@ model TrainingMaterial {
   createdAt       DateTime @default(now())
 
   @@map("training_materials")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  @@map("password_reset_tokens")
+}
+
+model SiteSettings {
+  id              String   @id @default("singleton")
+  adminPhone      String?
+  adminTelegram   String?
+  instagramUrl    String?
+  telegramChannel String?
+  updatedAt       DateTime @updatedAt
+
+  @@map("site_settings")
 }

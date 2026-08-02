@@ -5,13 +5,13 @@ export async function GET() {
   const session = await auth();
   if (!session?.user) return new Response("Unauthorized", { status: 401 });
 
-  const topics = await prisma.stage.findMany({
-    where: { type: "STAGE" },
+  const stages = await prisma.stage.findMany({
+    where: { type: "TRAINING" },
     orderBy: { levelOrder: "asc" },
     include: { _count: { select: { questions: true } } },
   });
 
   return Response.json({
-    topics: topics.map((t) => ({ id: t.id, titleJson: t.titleJson, questionsCount: t._count.questions })),
+    topics: stages.map((s) => ({ id: s.id, titleJson: s.titleJson, questionsCount: s._count.questions })),
   });
 }

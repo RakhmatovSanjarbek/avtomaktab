@@ -6,10 +6,10 @@ const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  // Bu yerda kelajakda boshlang'ich ma'lumotlar (masalan standart kategoriyalar)
-  // qo'shilishi mumkin. Hozircha bo'sh — foydalanuvchilar admin panel yoki
-  // scripts/create-admin.ts orqali qo'lda yaratiladi.
-  console.log("✅ Seed skripti ishga tushdi (hech narsa yaratilmadi).");
+  const result = await prisma.user.deleteMany({
+    where: { phone: { in: ["+998900000001", "+998900000002"] } },
+  });
+  console.log(`✅ ${result.count} ta test foydalanuvchi o'chirildi.`);
 }
 
 main()

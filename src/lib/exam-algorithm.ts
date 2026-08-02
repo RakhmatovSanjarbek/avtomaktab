@@ -25,7 +25,7 @@ function shuffle<T>(arr: T[]): T[] {
  */
 export async function buildExamQuestionSet(totalCount: 20 | 50, userId: string): Promise<ExamQuestion[]> {
   const topics = await prisma.stage.findMany({
-    where: { type: "STAGE" },
+    where: { type: "TRAINING" },
     orderBy: { levelOrder: "asc" },
   });
 

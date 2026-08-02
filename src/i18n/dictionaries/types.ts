@@ -32,8 +32,8 @@ export interface Dictionary {
     topVariants: string; recentResults: string; colStudent: string; colModule: string;
     colScore: string; colDate: string; noData: string;
     settings: {
-      title: string; profileTitle: string; nameLabel: string; passwordLabel: string;
-      saveButton: string; saveSuccess: string; saveError: string; systemTitle: string; systemDesc: string;
+      title: string; profileTitle: string; nameLabel: string; emailLabel: string; emailTakenError: string; passwordLabel: string;
+      saveButton: string; saveSuccess: string; saveError: string; systemTitle: string; systemDesc: string; contactTitle: string; contactDesc: string; adminPhoneLabel: string; adminTelegramLabel: string; instagramLabel: string; telegramChannelLabel: string;
     };
     adminStudentHistory: {
       title: string; backToStudents: string; historyTitle: string; viewButton: string; colStudent: string;

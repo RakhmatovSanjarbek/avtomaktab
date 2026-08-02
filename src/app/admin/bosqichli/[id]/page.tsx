@@ -1,6 +1,6 @@
-import { TopicDetail } from "@/components/admin/topic-detail";
+import { redirect } from "next/navigation";
 
-export default async function TopicDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function BosqichliRedirectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <TopicDetail topicId={id} />;
+  redirect(`/admin/talim/${id}`);
 }

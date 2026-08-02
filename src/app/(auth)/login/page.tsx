@@ -1,16 +1,20 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { signIn, getSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useDeviceId } from "@/hooks/useDeviceId";
 import { useLanguage } from "@/i18n/language-provider";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
-import { GraduationCap, AlertCircle, Loader2, Eye, EyeOff, Send, Phone } from "lucide-react";
+import { GraduationCap, AlertCircle, Loader2, Eye, EyeOff, Send, Phone, Camera, MessageCircle } from "lucide-react";
 
-const ADMIN_TELEGRAM = "https://t.me/avtomaktab_admin";
-const ADMIN_PHONE = "+998901234567";
+type SiteContact = {
+  adminPhone: string | null;
+  adminTelegram: string | null;
+  instagramUrl: string | null;
+  telegramChannel: string | null;
+};
 
 export default function LoginPage() {
   const router = useRouter();
@@ -21,13 +25,34 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [contact, setContact] = useState<SiteContact>({
+    adminPhone: null,
+    adminTelegram: null,
+    instagramUrl: null,
+    telegramChannel: null,
+  });
+
+  useEffect(() => {
+    fetch("/api/site-settings")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.settings) {
+          setContact({
+            adminPhone: data.settings.adminPhone,
+            adminTelegram: data.settings.adminTelegram,
+            instagramUrl: data.settings.instagramUrl,
+            telegramChannel: data.settings.telegramChannel,
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
     setLoading(true);
 
-    // Avval maxsus tekshiruv — aniq xato sababini olish uchun
     const precheckRes = await fetch("/api/auth/precheck", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -69,34 +94,41 @@ export default function LoginPage() {
     router.refresh();
   }
 
-  function openTelegram() {
-    window.open(ADMIN_TELEGRAM, "_blank", "noopener,noreferrer");
+  function openLink(url: string | null) {
+    if (url) window.open(url, "_blank", "noopener,noreferrer");
   }
 
   function callAdmin() {
-    window.location.href = "tel:" + ADMIN_PHONE;
+    if (contact.adminPhone) window.location.href = "tel:" + contact.adminPhone;
   }
 
+  const links = [
+    contact.adminTelegram && { icon: Send, label: "Telegram", onClick: () => openLink(contact.adminTelegram) },
+    contact.adminPhone && { icon: Phone, label: contact.adminPhone, onClick: callAdmin },
+    contact.instagramUrl && { icon: Camera, label: "Instagram", onClick: () => openLink(contact.instagramUrl) },
+    contact.telegramChannel && { icon: MessageCircle, label: "Kanal", onClick: () => openLink(contact.telegramChannel) },
+  ].filter(Boolean) as { icon: any; label: string; onClick: () => void }[];
+
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="absolute right-4 top-4 flex items-center gap-2">
+    <div className="relative flex min-h-screen items-center justify-center bg-background px-4 py-12">
+      <div className="absolute right-5 top-5 flex items-center gap-2">
         <LanguageSwitcher />
         <ThemeToggle />
       </div>
 
-      <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center text-center">
-          <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
-            <GraduationCap className="h-7 w-7 text-primary" strokeWidth={1.75} />
+      <div className="w-full max-w-md">
+        <div className="mb-10 flex flex-col items-center text-center">
+          <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-primary/10">
+            <GraduationCap className="h-8 w-8 text-primary" strokeWidth={1.6} />
           </div>
-          <h1 className="text-xl font-semibold text-foreground">{t("auth.title")}</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{t("auth.subtitle")}</p>
+          <h1 className="text-2xl font-semibold text-foreground">{t("auth.title")}</h1>
+          <p className="mt-2 text-sm text-muted-foreground">{t("auth.subtitle")}</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="rounded-[2rem] border border-border bg-card p-9 shadow-xl shadow-black/[0.03]">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label htmlFor="phone" className="mb-1.5 block text-sm font-medium text-foreground">
+              <label htmlFor="phone" className="mb-2 block text-sm font-medium text-foreground">
                 {t("auth.phoneLabel")}
               </label>
               <input
@@ -105,12 +137,12 @@ export default function LoginPage() {
                 onChange={(e) => setPhone(e.target.value)}
                 placeholder={t("auth.phonePlaceholder")}
                 required
-                className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm text-foreground outline-none transition-colors placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-ring/50"
+                className="w-full rounded-2xl border border-input bg-background px-5 py-3.5 text-base text-foreground outline-none transition-colors placeholder:text-muted-foreground/60 focus:border-primary focus:ring-4 focus:ring-ring/20"
               />
             </div>
 
             <div>
-              <label htmlFor="password" className="mb-1.5 block text-sm font-medium text-foreground">
+              <label htmlFor="password" className="mb-2 block text-sm font-medium text-foreground">
                 {t("auth.passwordLabel")}
               </label>
               <div className="relative">
@@ -120,25 +152,25 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
-                  className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 pr-10 text-sm text-foreground outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-ring/50"
+                  className="w-full rounded-2xl border border-input bg-background px-5 py-3.5 pr-12 text-base text-foreground outline-none transition-colors focus:border-primary focus:ring-4 focus:ring-ring/20"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword((v) => !v)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-muted-foreground hover:text-foreground"
+                  className="absolute inset-y-0 right-0 flex items-center pr-4 text-muted-foreground hover:text-foreground"
                   aria-label="toggle password"
                 >
                   {showPassword ? (
-                    <EyeOff className="h-4 w-4" strokeWidth={1.75} />
+                    <EyeOff className="h-5 w-5" strokeWidth={1.75} />
                   ) : (
-                    <Eye className="h-4 w-4" strokeWidth={1.75} />
+                    <Eye className="h-5 w-5" strokeWidth={1.75} />
                   )}
                 </button>
               </div>
             </div>
 
             {error && (
-              <div className="flex items-start gap-2 rounded-xl bg-destructive/10 px-3.5 py-2.5">
+              <div className="flex items-start gap-2.5 rounded-2xl bg-destructive/10 px-4 py-3">
                 <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-destructive" strokeWidth={1.75} />
                 <p className="text-sm text-destructive">{error}</p>
               </div>
@@ -147,7 +179,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading || !deviceId}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-medium text-primary-foreground transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-50"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-primary py-3.5 text-base font-medium text-primary-foreground shadow-lg shadow-primary/20 transition-all hover:opacity-90 hover:shadow-primary/30 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {loading && <Loader2 className="h-4 w-4 animate-spin" />}
               {loading ? t("auth.loggingIn") : t("auth.loginButton")}
@@ -155,27 +187,25 @@ export default function LoginPage() {
           </form>
         </div>
 
-        <div className="mt-6 flex flex-col items-center gap-3">
-          <p className="text-xs text-muted-foreground">{t("auth.noAccount")}</p>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={openTelegram}
-              className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary"
-            >
-              <Send className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-              Telegram
-            </button>
-            <button
-              type="button"
-              onClick={callAdmin}
-              className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-xs font-medium text-foreground shadow-sm transition-colors hover:bg-secondary"
-            >
-              <Phone className="h-3.5 w-3.5 text-primary" strokeWidth={1.75} />
-              {ADMIN_PHONE}
-            </button>
+        {links.length > 0 && (
+          <div className="mt-8 flex flex-col items-center gap-3">
+            <p className="text-xs uppercase tracking-wider text-muted-foreground/70">{t("auth.noAccount")}</p>
+            <div className="flex items-center gap-3">
+              {links.map((link, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={link.onClick}
+                  title={link.label}
+                  aria-label={link.label}
+                  className="flex h-11 w-11 items-center justify-center rounded-full border border-border bg-card text-muted-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:text-primary hover:shadow-md"
+                >
+                  <link.icon className="h-4.5 w-4.5" strokeWidth={1.75} />
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
