@@ -9,14 +9,7 @@ export interface Dictionary {
   dashboard: {
     welcome: string; welcomeDesc: string;
     modules: {
-      bosqichli: {
-      title: string; desc: string; addTopicButton: string; topicDialogTitle: string;
-      topicNameLabel: string; topicsEmpty: string; backToTopics: string; linkQuestionsButton: string;
-      linkDialogTitle: string; searchPlaceholder: string; bankEmpty: string; linkedBadge: string;
-      unlinkButton: string; linkButton: string; deleteTopicConfirm: string; linkedQuestionsTitle: string;
-      linkedEmpty: string;
-    };
-    talim: { title: string; desc: string };
+      talim: { title: string; desc: string };
       variantli: { title: string; desc: string };
       bosqichli: { title: string; desc: string };
       yakuniy: { title: string; desc: string };
@@ -65,6 +58,13 @@ export interface Dictionary {
       deleteSuccess: string; deleteError: string; createSuccess: string; editSuccess: string;
       saveError: string; empty: string; emptyQuestions: string; editButton: string; deleteButton: string;
     };
+    bosqichli: {
+      title: string; desc: string; addTopicButton: string; topicDialogTitle: string;
+      topicNameLabel: string; topicsEmpty: string; backToTopics: string; linkQuestionsButton: string;
+      linkDialogTitle: string; searchPlaceholder: string; bankEmpty: string; linkedBadge: string;
+      unlinkButton: string; linkButton: string; deleteTopicConfirm: string; linkedQuestionsTitle: string;
+      linkedEmpty: string;
+    };
   };
   test: {
     chooseModeTitle: string; mode20Label: string; mode50Label: string; startButton: string;
@@ -86,7 +86,7 @@ export interface Dictionary {
   studentTalim: {
     title: string; desc: string; empty: string; backToStages: string; materialsTitle: string;
     materialsEmpty: string; memorizeTitle: string; memorizeDesc: string; startTestButton: string;
-    correctAnswerLabel: string; questionsEmpty: string;
+    correctAnswerLabel: string; questionsEmpty: string; viewButton: string; backToStage: string;
   };
   studentSaved: {
     title: string; desc: string; empty: string; removeButton: string;

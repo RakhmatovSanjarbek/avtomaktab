@@ -62,6 +62,9 @@ export const ru: Dictionary = {
     topVariants: "Самые активные варианты",
     recentResults: "Последние результаты",
     colStudent: "Учащийся",
+    colModule: "Раздел",
+    colDate: "Дата",
+    colScore: "Результат",
     noData: "Пока нет данных",
     adminStudentHistory: {
       title: "Статистика учащегося",

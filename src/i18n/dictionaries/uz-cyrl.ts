@@ -62,6 +62,9 @@ export const uzCyrl: Dictionary = {
     topVariants: "Энг фаол вариантлар",
     recentResults: "Сўнгги натижалар",
     colStudent: "Ўқувчи",
+    colModule: "Бўлим",
+    colDate: "Сана",
+    colScore: "Натижа",
     noData: "Ҳозирча маълумот йўқ",
     adminStudentHistory: {
       title: "Ўқувчи статистикаси",

@@ -96,11 +96,11 @@ export async function buildExamQuestionSet(totalCount: 20 | 50, userId: string):
 
   combined = shuffle(combined).slice(0, totalCount);
 
-  return combined.map((q) => ({
+  return combined.map((q: any) => ({
     id: q.id,
     textJson: q.textJson,
     explanationJson: q.explanationJson,
     imageUrl: q.imageUrl,
-    options: shuffle(q.options).map((o) => ({ id: o.id, optionTextJson: o.optionTextJson, isCorrect: o.isCorrect })),
+    options: shuffle(q.options as any[]).map((o: any) => ({ id: o.id, optionTextJson: o.optionTextJson, isCorrect: o.isCorrect })),
   }));
 }

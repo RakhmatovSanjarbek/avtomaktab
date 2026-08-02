@@ -62,6 +62,9 @@ export const uzLatin: Dictionary = {
     topVariants: "Eng faol variantlar",
     recentResults: "So'nggi natijalar",
     colStudent: "O'quvchi",
+    colModule: "Bo'lim",
+    colDate: "Sana",
+    colScore: "Natija",
     noData: "Hozircha ma'lumot yo'q",
     adminStudentHistory: {
       title: "O'quvchi statistikasi",
