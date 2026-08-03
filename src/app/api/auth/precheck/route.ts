@@ -25,8 +25,8 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, code: "INVALID" });
   }
 
-  // Qurilmani tekshirish (hali o'zgartirmasdan, faqat o'qish)
-  if (user.deviceId && user.deviceId !== deviceId) {
+  // Admin uchun qurilma cheklovi qo'llanilmaydi
+  if (user.role !== "ADMIN" && user.deviceId && user.deviceId !== deviceId) {
     return Response.json({ ok: false, code: "DEVICE_MISMATCH" });
   }
 
