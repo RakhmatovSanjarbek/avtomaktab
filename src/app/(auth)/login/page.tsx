@@ -67,6 +67,10 @@ export default function LoginPage() {
         setError(t("auth.errorRateLimited").replace("{minutes}", String(minutes)));
       } else if (precheck.code === "DEVICE_MISMATCH") {
         setError(t("auth.errorDeviceMismatch"));
+      } else if (precheck.code === "ACCOUNT_DISABLED") {
+        setError(t("auth.errorAccountDisabled"));
+      } else if (precheck.code === "OUTSIDE_HOURS") {
+        setError(t("auth.errorOutsideHours"));
       } else {
         setError(t("auth.errorInvalid"));
       }

@@ -3,7 +3,7 @@ export interface Dictionary {
   auth: {
     title: string; subtitle: string; phoneLabel: string; phonePlaceholder: string;
     passwordLabel: string; loginButton: string; loggingIn: string; errorInvalid: string;
-    errorDeviceMismatch: string; errorRateLimited: string; deviceOwnConfirm: string; noAccount: string;
+    errorDeviceMismatch: string; errorRateLimited: string; deviceOwnConfirm: string; noAccount: string; errorAccountDisabled: string; errorOutsideHours: string;
   };
   topbar: { admin: string; student: string; logout: string };
   dashboard: {
@@ -64,6 +64,17 @@ export interface Dictionary {
       linkDialogTitle: string; searchPlaceholder: string; bankEmpty: string; linkedBadge: string;
       unlinkButton: string; linkButton: string; deleteTopicConfirm: string; linkedQuestionsTitle: string;
       linkedEmpty: string;
+    };
+    admins: {
+      title: string; desc: string; addButton: string; colName: string; colPhone: string;
+      colSections: string; colSchedule: string; colStatus: string; colActions: string;
+      statusActive: string; statusBlocked: string; superAdminBadge: string; allDays: string; allHours: string;
+      dialogAddTitle: string; dialogEditTitle: string; nameLabel: string; phoneLabel: string;
+      passwordLabel: string; passwordOptionalLabel: string; sectionsLabel: string; workDaysLabel: string;
+      workHoursLabel: string; activeLabel: string; dayMon: string; dayTue: string; dayWed: string;
+      dayThu: string; dayFri: string; daySat: string; daySun: string; createSuccess: string; createError: string;
+      editSuccess: string; deleteConfirm: string; deleteSuccess: string; toggleActiveConfirm: string;
+      empty: string; editButton: string; deleteButton: string; dialogSubmit: string; dialogSubmitting: string;
     };
   };
   test: {

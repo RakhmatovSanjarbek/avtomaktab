@@ -1,8 +1,11 @@
+import { requireSectionAccess } from "@/lib/require-admin";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getLocaleServer } from "@/lib/get-locale-server";
 import { StagesList } from "@/components/admin/stages-list";
 
 export default async function AdminTalimPage() {
+  await requireSectionAccess("talim");
+
   const locale = await getLocaleServer();
   const dict = getDictionary(locale);
 

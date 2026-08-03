@@ -1,3 +1,4 @@
+import { requireSectionAccess } from "@/lib/require-admin";
 import { prisma } from "@/lib/prisma";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getLocaleServer } from "@/lib/get-locale-server";
@@ -6,6 +7,8 @@ import Link from "next/link";
 import { Layers, FileQuestion, ChevronRight } from "lucide-react";
 
 export default async function AdminBosqichliInfoPage() {
+  await requireSectionAccess("bosqichli");
+
   const locale = await getLocaleServer();
   const dict = getDictionary(locale);
 

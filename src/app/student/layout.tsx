@@ -13,7 +13,8 @@ export default async function StudentLayout({
   if (!session?.user) {
     redirect("/login");
   }
-  if ((session.user as any).role === "ADMIN") {
+  const role = (session.user as any).role;
+  if (role === "ADMIN" || role === "SUPER_ADMIN") {
     redirect("/admin");
   }
 

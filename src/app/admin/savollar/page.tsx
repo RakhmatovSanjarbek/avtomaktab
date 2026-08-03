@@ -1,8 +1,11 @@
+import { requireSectionAccess } from "@/lib/require-admin";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getLocaleServer } from "@/lib/get-locale-server";
 import { VariantsList } from "@/components/admin/variants-list";
 
 export default async function AdminQuestionsPage() {
+  await requireSectionAccess("questions");
+
   const locale = await getLocaleServer();
   const dict = getDictionary(locale);
 

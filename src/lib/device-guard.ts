@@ -10,7 +10,7 @@ export class DeviceMismatchError extends Error {
 
 /**
  * Foydalanuvchi login qilganda chaqiriladi.
- * - ADMIN uchun qurilma cheklovi umuman qo'llanilmaydi (istalgan qurilmadan kirishi mumkin).
+ * - ADMIN va SUPER_ADMIN uchun qurilma cheklovi qo'llanilmaydi.
  * - STUDENT uchun:
  *   - Agar userda deviceId hali yo'q bo'lsa (birinchi kirish) — biriktiradi.
  *   - Agar mavjud bo'lsa — kelgan deviceId bilan solishtiradi.
@@ -19,12 +19,10 @@ export async function verifyOrAssignDevice(userId: string, incomingDeviceId: str
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new Error("USER_NOT_FOUND");
 
-  // Adminlar uchun qurilma cheklovi yo'q
-  if (user.role === "ADMIN") {
+  if (user.role !== "STUDENT") {
     return true;
   }
 
-  // Birinchi marta kirish — device_id biriktiriladi
   if (!user.deviceId) {
     await prisma.user.update({
       where: { id: userId },
@@ -33,16 +31,12 @@ export async function verifyOrAssignDevice(userId: string, incomingDeviceId: str
     return true;
   }
 
-  // Keyingi kirishlar — solishtirish
   if (user.deviceId !== incomingDeviceId) {
     throw new DeviceMismatchError();
   }
   return true;
 }
 
-/**
- * Admin panel uchun: qurilmani qayta biriktirish (Reset Device ID)
- */
 export async function resetDevice(userId: string) {
   await prisma.user.update({
     where: { id: userId },

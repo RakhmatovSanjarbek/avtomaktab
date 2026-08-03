@@ -15,6 +15,7 @@ datasource db {
 enum Role {
   STUDENT
   ADMIN
+  SUPER_ADMIN
 }
 
 enum StageType {
@@ -43,6 +44,14 @@ model User {
 
   // Til sozlamasi (oxirgi tanlangan til saqlanadi)
   preferredLang  String   @default("uz-latin") // uz-latin | uz-cyrl | ru
+
+  // Multi-admin: ruxsatlar va ish vaqti (faqat ADMIN rolida ishlatiladi)
+  isActive        Boolean  @default(true)
+  allowedSections Json?    // string[] masalan ["students","questions","talim","bosqichli"]
+  workDays        Json?    // number[] 0=Yak,1=Dush...6=Shan; null = barcha kunlar
+  workStartTime   String?  // "09:00"
+  workEndTime     String?  // "18:00"
+  createdByAdminId String?
 
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

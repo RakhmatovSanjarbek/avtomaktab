@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { checkRateLimit } from "@/lib/rate-limit";
+import { isWithinWorkingHours } from "@/lib/schedule";
 
 export async function POST(req: Request) {
   const body = await req.json();
@@ -25,8 +26,19 @@ export async function POST(req: Request) {
     return Response.json({ ok: false, code: "INVALID" });
   }
 
-  // Admin uchun qurilma cheklovi qo'llanilmaydi
-  if (user.role !== "ADMIN" && user.deviceId && user.deviceId !== deviceId) {
+  // Faqat oddiy ADMIN uchun: faollik va ish vaqti tekshiruvi (SUPER_ADMIN cheklovsiz)
+  if (user.role === "ADMIN") {
+    if (!user.isActive) {
+      return Response.json({ ok: false, code: "ACCOUNT_DISABLED" });
+    }
+    const workDays = (user.workDays as number[] | null) ?? null;
+    if (!isWithinWorkingHours(workDays, user.workStartTime, user.workEndTime)) {
+      return Response.json({ ok: false, code: "OUTSIDE_HOURS" });
+    }
+  }
+
+  // STUDENT uchun qurilma tekshiruvi
+  if (user.role === "STUDENT" && user.deviceId && user.deviceId !== deviceId) {
     return Response.json({ ok: false, code: "DEVICE_MISMATCH" });
   }
 

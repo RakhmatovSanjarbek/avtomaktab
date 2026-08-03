@@ -1,9 +1,9 @@
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireApiSectionAccess } from "@/lib/require-admin";
 import bcrypt from "bcryptjs";
 
 export async function GET() {
-  const session = await requireAdmin();
+  const session = await requireApiSectionAccess("students");
   if (!session) return new Response("Forbidden", { status: 403 });
 
   const students = await prisma.user.findMany({
@@ -23,7 +23,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await requireAdmin();
+  const session = await requireApiSectionAccess("students");
   if (!session) return new Response("Forbidden", { status: 403 });
 
   const body = await req.json();

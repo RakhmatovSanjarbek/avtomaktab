@@ -1,8 +1,11 @@
+import { requireSectionAccess } from "@/lib/require-admin";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getLocaleServer } from "@/lib/get-locale-server";
 import { StudentsTable } from "@/components/admin/students-table";
 
 export default async function AdminStudentsPage() {
+  await requireSectionAccess("students");
+
   const locale = await getLocaleServer();
   const dict = getDictionary(locale);
 

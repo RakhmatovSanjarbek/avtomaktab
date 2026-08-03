@@ -1,8 +1,8 @@
 import { prisma } from "@/lib/prisma";
-import { requireAdmin } from "@/lib/require-admin";
+import { requireApiSectionAccess } from "@/lib/require-admin";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await requireAdmin();
+  const session = await requireApiSectionAccess("bosqichli");
   if (!session) return new Response("Forbidden", { status: 403 });
 
   const { id: stageId } = await params;
@@ -20,7 +20,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
 }
 
 export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  const session = await requireAdmin();
+  const session = await requireApiSectionAccess("bosqichli");
   if (!session) return new Response("Forbidden", { status: 403 });
 
   const { id: stageId } = await params;
