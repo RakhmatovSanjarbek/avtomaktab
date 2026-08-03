@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useLanguage } from "@/i18n/language-provider";
 import { localeOptions } from "@/i18n/dictionaries";
 import { X, CheckCircle2, Upload, Loader2, Plus } from "lucide-react";
+import { latinToCyrillic } from "@/lib/uzbek-transliterate";
 
 type Option = { id?: string; optionTextJson: any; isCorrect: boolean };
 export type QuestionData = { id: string; textJson: any; explanationJson: any; imageUrl: string | null; options: Option[] };
@@ -61,19 +62,56 @@ export function QuestionDialog({
     return base;
   });
 
+  const autoGenRef = useRef<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   function updateField(field: "text" | "explanation", value: string) {
-    setLangs((prev) => ({ ...prev, [activeTab]: { ...prev[activeTab], [field]: value } }));
+    let cyrOverride: string | null = null;
+    if (activeTab === "uz-latin") {
+      const key = `field-${field}`;
+      const currentCyr = langs["uz-cyrl"][field];
+      const wasUntouched = !currentCyr || currentCyr === autoGenRef.current[key];
+      if (wasUntouched) {
+        cyrOverride = latinToCyrillic(value);
+        autoGenRef.current[key] = cyrOverride;
+      }
+    }
+
+    setLangs((prev) => {
+      const next = { ...prev, [activeTab]: { ...prev[activeTab], [field]: value } };
+      if (cyrOverride !== null) {
+        next["uz-cyrl"] = { ...next["uz-cyrl"], [field]: cyrOverride };
+      }
+      return next;
+    });
   }
+
   function updateOption(i: number, value: string) {
+    let cyrOverride: string | null = null;
+    if (activeTab === "uz-latin") {
+      const key = `option-${i}`;
+      const currentCyr = langs["uz-cyrl"].options[i] ?? "";
+      const wasUntouched = !currentCyr || currentCyr === autoGenRef.current[key];
+      if (wasUntouched) {
+        cyrOverride = latinToCyrillic(value);
+        autoGenRef.current[key] = cyrOverride;
+      }
+    }
+
     setLangs((prev) => {
       const opts = [...prev[activeTab].options];
       opts[i] = value;
-      return { ...prev, [activeTab]: { ...prev[activeTab], options: opts } };
+      const next = { ...prev, [activeTab]: { ...prev[activeTab], options: opts } };
+      if (cyrOverride !== null) {
+        const cyrOpts = [...next["uz-cyrl"].options];
+        cyrOpts[i] = cyrOverride;
+        next["uz-cyrl"] = { ...next["uz-cyrl"], options: cyrOpts };
+      }
+      return next;
     });
   }
+
   function addOption() {
     setLangs((prev) => {
       const next = { ...prev };
@@ -82,6 +120,7 @@ export function QuestionDialog({
     });
     setOptionsCount((c) => c + 1);
   }
+
   function removeOption(i: number) {
     if (optionsCount <= MIN_OPTIONS) return;
     setLangs((prev) => {
@@ -91,6 +130,18 @@ export function QuestionDialog({
     });
     setOptionsCount((c) => c - 1);
     setCorrectIndex((ci) => (i === ci ? 0 : i < ci ? ci - 1 : ci));
+  }
+
+  function handleCyrRegenerate() {
+    setLangs((prev) => {
+      const genText = latinToCyrillic(prev["uz-latin"].text);
+      const genExpl = latinToCyrillic(prev["uz-latin"].explanation);
+      const genOpts = prev["uz-latin"].options.map((o) => latinToCyrillic(o));
+      autoGenRef.current["field-text"] = genText;
+      autoGenRef.current["field-explanation"] = genExpl;
+      genOpts.forEach((g, i) => { autoGenRef.current[`option-${i}`] = g; });
+      return { ...prev, "uz-cyrl": { text: genText, explanation: genExpl, options: genOpts } };
+    });
   }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -151,7 +202,7 @@ export function QuestionDialog({
           </button>
         </div>
 
-        <div className="mb-4 flex gap-1 rounded-xl border border-border bg-background p-1">
+        <div className="mb-2 flex gap-1 rounded-xl border border-border bg-background p-1">
           {localeOptions.map((opt) => (
             <button key={opt.value} type="button" onClick={() => setActiveTab(opt.value)}
               className={"flex-1 rounded-lg py-1.5 text-xs font-medium transition-colors " + (activeTab === opt.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground")}>
@@ -159,6 +210,12 @@ export function QuestionDialog({
             </button>
           ))}
         </div>
+
+        {activeTab === "uz-cyrl" && (
+          <button type="button" onClick={handleCyrRegenerate} className="mb-4 text-xs font-medium text-primary hover:opacity-80">
+            ↻ Lotin asosida qayta hosil qilish
+          </button>
+        )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
