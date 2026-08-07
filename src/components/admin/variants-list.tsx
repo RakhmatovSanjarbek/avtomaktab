@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/i18n/language-provider";
-import { Plus, FileQuestion, Trash2, X, ChevronRight } from "lucide-react";
+import { Plus, FileQuestion, Trash2, X, ChevronRight, Sparkles, Loader2 } from "lucide-react";
 
 type Variant = { id: string; titleJson: any; questionsCount: number };
 
@@ -13,6 +13,20 @@ export function VariantsList() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [distributing, setDistributing] = useState(false);
+
+  async function handleAutoDistribute() {
+    if (!window.confirm("Ta'lim moduli bo'limlaridagi barcha savollarni ketma-ket variantlarga (har birida 30 tadan) avtomatik joylashtirish tasdiqlaysizmi?")) return;
+    setDistributing(true);
+    try {
+      const res = await fetch("/api/admin/variants/auto-distribute", { method: "POST" });
+      const data = await res.json();
+      alert(`✅ ${data.distributedCount} ta savol, ${data.createdVariants} ta yangi variantga joylashtirildi.`);
+      load();
+    } finally {
+      setDistributing(false);
+    }
+  }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -45,7 +59,16 @@ export function VariantsList() {
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-end gap-2">
+        <button
+          type="button"
+          onClick={handleAutoDistribute}
+          disabled={distributing}
+          className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-secondary disabled:opacity-50"
+        >
+          {distributing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" strokeWidth={1.75} />}
+          Avtomatik to'ldirish
+        </button>
         <button
           type="button"
           onClick={() => setDialogOpen(true)}

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { requireApiSectionAccess } from "@/lib/require-admin";
+import { requireApiSectionAccess, requireApiAnySectionAccess } from "@/lib/require-admin";
 
 export async function PATCH(
   req: Request,

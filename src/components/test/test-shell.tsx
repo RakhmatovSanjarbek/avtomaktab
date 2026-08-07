@@ -4,17 +4,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { textFor } from "@/components/admin/question-dialog";
 import { localeOptions, Locale } from "@/i18n/dictionaries";
 import { useLanguage } from "@/i18n/language-provider";
-import { CheckCircle2, XCircle, LogOut, Flag, Car, Bookmark, X, ZoomIn } from "lucide-react";
+import { CheckCircle2, XCircle, LogOut, Flag, Car, Bookmark, X, ZoomIn, Play } from "lucide-react";
 import { exitFullscreen } from "@/lib/fullscreen";
 
-export type ShellOption = { id: string; optionTextJson: any };
+export type ShellOption = { id: string; optionTextJson: any; isCorrect?: boolean };
 export type ShellQuestion = { id: string; textJson: any; imageUrl: string | null; options: ShellOption[] };
 export type ShellAnswer = { selectedOptionId: string; isCorrect: boolean; correctOptionId: string };
 
 const FKEYS = ["F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9"];
-
-// Rasm biriktirilmagan savollar uchun standart rasm.
-// Fayl yo'lini o'zgartirish uchun shu manzilga rasm yuklang: public/defaults/question-default.png
 const DEFAULT_QUESTION_IMAGE = "/defaults/question-default.jpeg";
 
 function shuffleArray<T>(arr: T[]): T[] {
@@ -34,10 +31,13 @@ export function TestShell({
   currentIndex,
   confirmMode,
   enforceFocus = false,
+  topBanner,
+  readOnly = false,
   onAnswer,
   onNavigate,
   onFinish,
   onExit,
+  onStartTest,
 }: {
   questions: ShellQuestion[];
   timeLimitSec: number;
@@ -46,12 +46,16 @@ export function TestShell({
   currentIndex: number;
   confirmMode: "dialog" | "direct";
   enforceFocus?: boolean;
+  topBanner?: string;
+  readOnly?: boolean;
   onAnswer: (questionId: string, optionId: string) => Promise<void> | void;
   onNavigate: (index: number) => void;
   onFinish: () => void;
   onExit: () => void;
+  onStartTest?: () => void;
 }) {
   const { locale, setLocale } = useLanguage();
+  const safeIndex = Math.min(Math.max(currentIndex, 0), Math.max(questions.length - 1, 0));
   const [timeLeft, setTimeLeft] = useState(timeLimitSec);
   const [pendingOptionId, setPendingOptionId] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
@@ -60,19 +64,20 @@ export function TestShell({
   const [confirmAction, setConfirmAction] = useState<"finish" | "exit" | null>(null);
   const [zoomOpen, setZoomOpen] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const [displayOptions, setDisplayOptions] = useState<ShellOption[]>(() => shuffleArray(questions[currentIndex].options));
   const [focusWarning, setFocusWarning] = useState(false);
   const hiddenAtRef = useRef<number | null>(null);
   const violationCountRef = useRef(0);
   const activeRef = useRef<string | null>(null);
   const finishedRef = useRef(false);
 
-  const q = questions[currentIndex];
-  const answered = answers[q.id];
-  const isSaved = savedIds.has(q.id);
-  const displayImage = imageError ? null : (q.imageUrl || DEFAULT_QUESTION_IMAGE);
+  const q = questions[safeIndex];
+  const answered = q ? answers[q.id] : undefined;
+  const isSaved = q ? savedIds.has(q.id) : false;
+  const displayImage = imageError ? null : (q?.imageUrl || DEFAULT_QUESTION_IMAGE);
+  const [displayOptions, setDisplayOptions] = useState<ShellOption[]>(() => (q ? shuffleArray(q.options) : []));
 
   useEffect(() => {
+    if (readOnly) return;
     const ids = questions.map((qq) => qq.id);
     fetch("/api/saved-questions/bulk-check", {
       method: "POST",
@@ -86,7 +91,7 @@ export function TestShell({
   }, []);
 
   async function toggleBookmark() {
-    if (savingBookmark) return;
+    if (savingBookmark || !q) return;
     setSavingBookmark(true);
     try {
       const res = await fetch("/api/saved-questions/toggle", {
@@ -107,6 +112,7 @@ export function TestShell({
   }
 
   useEffect(() => {
+    if (readOnly) return;
     const tick = () => {
       const elapsed = Math.floor((Date.now() - startedAt) / 1000);
       const left = Math.max(timeLimitSec - elapsed, 0);
@@ -119,19 +125,20 @@ export function TestShell({
     tick();
     const interval = setInterval(tick, 1000);
     return () => clearInterval(interval);
-  }, [startedAt, timeLimitSec, onFinish]);
+  }, [startedAt, timeLimitSec, onFinish, readOnly]);
 
   useEffect(() => {
+    if (readOnly) return;
     function handleBeforeUnload(e: BeforeUnloadEvent) {
       e.preventDefault();
       e.returnValue = "";
     }
     window.addEventListener("beforeunload", handleBeforeUnload);
     return () => window.removeEventListener("beforeunload", handleBeforeUnload);
-  }, []);
+  }, [readOnly]);
 
   useEffect(() => {
-    if (!enforceFocus) return;
+    if (!enforceFocus || readOnly) return;
 
     function handleVisibility() {
       if (document.hidden) {
@@ -149,20 +156,20 @@ export function TestShell({
 
     document.addEventListener("visibilitychange", handleVisibility);
     return () => document.removeEventListener("visibilitychange", handleVisibility);
-  }, [enforceFocus, onFinish]);
+  }, [enforceFocus, onFinish, readOnly]);
 
   useEffect(() => {
     setPendingOptionId(null);
     activeRef.current = null;
     setZoomOpen(false);
     setImageError(false);
-    setDisplayOptions(shuffleArray(questions[currentIndex].options));
+    setDisplayOptions(q ? shuffleArray(q.options) : []);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex]);
+  }, [safeIndex]);
 
   const commitAnswer = useCallback(
     async (optionId: string) => {
-      if (checking || answered) return;
+      if (checking || answered || !q) return;
       setChecking(true);
       activeRef.current = null;
       setPendingOptionId(null);
@@ -172,11 +179,11 @@ export function TestShell({
         setChecking(false);
       }
     },
-    [checking, answered, onAnswer, q.id]
+    [checking, answered, onAnswer, q]
   );
 
   function handleOptionClick(optionId: string) {
-    if (answered || checking) return;
+    if (readOnly || answered || checking) return;
     if (confirmMode === "direct") {
       if (activeRef.current === optionId) {
         commitAnswer(optionId);
@@ -195,7 +202,7 @@ export function TestShell({
         setZoomOpen(false);
         return;
       }
-      if (answered || checking) return;
+      if (readOnly || answered || checking || !q) return;
       const idx = FKEYS.indexOf(e.key);
       if (idx !== -1 && q.options[idx]) {
         e.preventDefault();
@@ -211,13 +218,21 @@ export function TestShell({
     return () => window.removeEventListener("keydown", handleKey);
   });
 
+  if (!q) {
+    return (
+      <div className="fixed inset-0 z-40 flex items-center justify-center bg-[#0B1220] text-white">
+        <p className="text-sm text-white/70">Savollar topilmadi.</p>
+      </div>
+    );
+  }
+
   const minutes = Math.floor(timeLeft / 60);
   const seconds = timeLeft % 60;
 
   return (
     <div className="fixed inset-0 z-40 flex flex-col overflow-y-auto bg-[#0B1220] text-white">
-      {/* TOP BAR */}
-      <div className="flex shrink-0 items-center justify-between px-6 py-4">
+      {/* TOP BAR — 3 ustunli: chapda til, markazda bo'lim tavsifi, o'ngda amallar */}
+      <div className="grid shrink-0 grid-cols-[auto_1fr_auto] items-center gap-3 px-6 py-4">
         <div className="flex gap-2">
           {localeOptions.map((opt) => (
             <button
@@ -236,23 +251,52 @@ export function TestShell({
           ))}
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setConfirmAction("finish")}
-            className="flex items-center gap-1.5 rounded-lg border border-white/20 px-3.5 py-1.5 text-xs font-medium text-white/80 hover:border-white/40 hover:text-white"
-          >
-            <Flag className="h-3.5 w-3.5" />
-            Testni yakunlash
-          </button>
-          <button
-            type="button"
-            onClick={() => setConfirmAction("exit")}
-            className="flex items-center gap-1.5 rounded-lg border border-white/20 px-3.5 py-1.5 text-xs font-medium text-white/80 hover:border-white/40 hover:text-white"
-          >
-            <LogOut className="h-3.5 w-3.5" />
-            Ortga
-          </button>
+        {topBanner ? (
+          <div className="truncate text-center text-sm font-semibold text-white sm:text-base">{topBanner}</div>
+        ) : (
+          <div />
+        )}
+
+        <div className="flex items-center justify-end gap-2">
+          {readOnly ? (
+            <>
+              <button
+                type="button"
+                onClick={onStartTest}
+                className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground hover:opacity-90"
+              >
+                <Play className="h-3.5 w-3.5" />
+                Testni ishlash
+              </button>
+              <button
+                type="button"
+                onClick={onExit}
+                className="flex items-center gap-1.5 rounded-lg border border-white/20 px-3.5 py-1.5 text-xs font-medium text-white/80 hover:border-white/40 hover:text-white"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Ortga
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                onClick={() => setConfirmAction("finish")}
+                className="flex items-center gap-1.5 rounded-lg border border-white/20 px-3.5 py-1.5 text-xs font-medium text-white/80 hover:border-white/40 hover:text-white"
+              >
+                <Flag className="h-3.5 w-3.5" />
+                Testni yakunlash
+              </button>
+              <button
+                type="button"
+                onClick={() => setConfirmAction("exit")}
+                className="flex items-center gap-1.5 rounded-lg border border-white/20 px-3.5 py-1.5 text-xs font-medium text-white/80 hover:border-white/40 hover:text-white"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                Ortga
+              </button>
+            </>
+          )}
         </div>
       </div>
 
@@ -261,60 +305,70 @@ export function TestShell({
         <div className="flex-1 rounded-xl bg-[#2b4fc9] px-5 py-3.5 text-center text-sm font-semibold sm:text-base">
           {textFor(q.textJson, locale)}
         </div>
-        <button
-          type="button"
-          onClick={toggleBookmark}
-          disabled={savingBookmark}
-          className={
-            "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 transition-colors " +
-            (isSaved ? "border-amber-400 bg-amber-400/20 text-amber-300" : "border-white/20 text-white/50 hover:border-white/40 hover:text-white")
-          }
-          title="Saqlash"
-        >
-          <Bookmark className="h-5 w-5" fill={isSaved ? "currentColor" : "none"} strokeWidth={1.75} />
-        </button>
+        {!readOnly && (
+          <button
+            type="button"
+            onClick={toggleBookmark}
+            disabled={savingBookmark}
+            className={
+              "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 transition-colors " +
+              (isSaved ? "border-amber-400 bg-amber-400/20 text-amber-300" : "border-white/20 text-white/50 hover:border-white/40 hover:text-white")
+            }
+            title="Saqlash"
+          >
+            <Bookmark className="h-5 w-5" fill={isSaved ? "currentColor" : "none"} strokeWidth={1.75} />
+          </button>
+        )}
       </div>
 
-      {/* CONTENT: variantlar + rasm (kattaroq) */}
+      {/* CONTENT: variantlar + rasm */}
       <div className="flex flex-col gap-4 px-6 py-6 lg:flex-row lg:gap-6">
         <div className="flex w-full flex-col gap-3 lg:max-w-md">
-          {displayOptions.map((o, i) => {
+          {(readOnly ? q.options : displayOptions).map((o, i) => {
             const isPending = pendingOptionId === o.id;
             const isSelected = answered?.selectedOptionId === o.id;
-            const isCorrectOption = answered?.correctOptionId === o.id;
+            const isCorrectOption = readOnly ? !!o.isCorrect : answered?.correctOptionId === o.id;
 
             let cls = "border-white/15 bg-white/5 hover:bg-white/10";
-            if (isPending && !answered) cls = "border-white bg-white/15";
-            if (answered) {
-              if (isCorrectOption) cls = "border-green-400 bg-green-500/20";
-              else if (isSelected) cls = "border-red-400 bg-red-500/20";
-              else cls = "border-white/10 bg-white/5 opacity-50";
+            if (readOnly) {
+              cls = isCorrectOption ? "border-green-400 bg-green-500/20" : "border-white/10 bg-white/5";
+            } else {
+              if (isPending && !answered) cls = "border-white bg-white/15";
+              if (answered) {
+                if (isCorrectOption) cls = "border-green-400 bg-green-500/20";
+                else if (isSelected) cls = "border-red-400 bg-red-500/20";
+                else cls = "border-white/10 bg-white/5 opacity-50";
+              }
             }
 
             return (
               <button
                 key={o.id}
                 type="button"
-                disabled={!!answered || checking}
+                disabled={readOnly || !!answered || checking}
                 onClick={() => handleOptionClick(o.id)}
-                className={`flex items-center gap-3 rounded-xl border-2 px-3 py-3 text-left text-sm transition-colors ${cls}`}
+                className={`flex items-center gap-3 rounded-xl border-2 px-3 py-3 text-left text-sm transition-colors ${cls} ${readOnly ? "cursor-default" : ""}`}
               >
-                <span className="flex h-7 w-9 shrink-0 items-center justify-center rounded-md bg-[#1a2a5c] text-xs font-bold text-white/90">
-                  {FKEYS[i] ?? i + 1}
-                </span>
+                {!readOnly && (
+                  <span className="flex h-7 w-9 shrink-0 items-center justify-center rounded-md bg-[#1a2a5c] text-xs font-bold text-white/90">
+                    {FKEYS[i] ?? i + 1}
+                  </span>
+                )}
                 <span className="flex-1">{textFor(o.optionTextJson, locale)}</span>
-                {answered && isCorrectOption && <CheckCircle2 className="h-4 w-4 shrink-0" />}
-                {answered && isSelected && !isCorrectOption && <XCircle className="h-4 w-4 shrink-0" />}
+                {readOnly && isCorrectOption && <CheckCircle2 className="h-4 w-4 shrink-0 text-green-400" />}
+                {!readOnly && answered && isCorrectOption && <CheckCircle2 className="h-4 w-4 shrink-0" />}
+                {!readOnly && answered && isSelected && !isCorrectOption && <XCircle className="h-4 w-4 shrink-0" />}
               </button>
             );
           })}
         </div>
 
-        {/* RASM — har doim bir xil ramkali, markazlashgan katta quti */}
         <div className="relative mx-auto h-[300px] w-full max-w-2xl overflow-hidden rounded-2xl border-2 border-white/10 bg-white/5 sm:h-[420px] lg:h-[560px] lg:flex-1">
-          <div className="absolute right-2 top-2 z-10 rounded-lg bg-black/60 px-3 py-1.5 text-sm font-bold">
-            {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
-          </div>
+          {!readOnly && (
+            <div className="absolute right-2 top-2 z-10 rounded-lg bg-black/60 px-3 py-1.5 text-sm font-bold">
+              {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
+            </div>
+          )}
           {displayImage ? (
             <button
               type="button"
@@ -339,14 +393,14 @@ export function TestShell({
         </div>
       </div>
 
-      {/* SAVOLLAR PANELI — rasm ostida, markazda, oddiy oqimda */}
+      {/* SAVOLLAR PANELI */}
       <div className="flex justify-center px-6 pb-8 pt-2">
         <div className="flex max-w-4xl flex-wrap justify-center gap-1.5">
           {questions.map((qq, i) => {
             const ans = answers[qq.id];
-            const isCurrent = i === currentIndex;
+            const isCurrent = i === safeIndex;
             let bg = "bg-[#1a2a5c] text-white/70 hover:bg-[#243a7a]";
-            if (ans) bg = ans.isCorrect ? "bg-green-600/70 text-white" : "bg-red-600/70 text-white";
+            if (!readOnly && ans) bg = ans.isCorrect ? "bg-green-600/70 text-white" : "bg-red-600/70 text-white";
 
             return (
               <button
@@ -386,7 +440,7 @@ export function TestShell({
         </div>
       )}
 
-      {confirmMode === "dialog" && pendingOptionId && !answered && (
+      {confirmMode === "dialog" && pendingOptionId && !answered && !readOnly && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-sm rounded-2xl bg-[#2b4fc9] p-6 text-center shadow-2xl">
             <p className="text-sm font-semibold text-white/80">Variantni tasdiqlash</p>

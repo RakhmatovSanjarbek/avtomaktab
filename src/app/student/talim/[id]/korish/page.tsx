@@ -1,6 +1,6 @@
-import { TalimMemorizeView } from "@/components/student/talim-memorize-view";
+import { TalimPreviewView } from "@/components/student/talim-preview-view";
 
 export default async function TalimKorishPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  return <TalimMemorizeView stageId={id} />;
+  return <TalimPreviewView stageId={id} />;
 }

@@ -27,8 +27,8 @@ export async function POST(req: Request) {
   if (!session) return new Response("Forbidden", { status: 403 });
 
   const body = await req.json();
-  const { name, description } = body;
-  if (!name || !name.trim()) return new Response("Missing name", { status: 400 });
+  const { titleJson, descJson } = body;
+  if (!titleJson?.uzLatin?.trim()) return new Response("Missing name", { status: 400 });
 
   const count = await prisma.stage.count({ where: { type: "TRAINING" } });
 
@@ -36,8 +36,8 @@ export async function POST(req: Request) {
     data: {
       type: "TRAINING",
       levelOrder: count + 1,
-      titleJson: { uzLatin: name, uzCyrl: name, ru: name },
-      descJson: description ? { uzLatin: description, uzCyrl: description, ru: description } : undefined,
+      titleJson,
+      descJson: descJson ?? undefined,
     },
   });
 

@@ -6,6 +6,7 @@ import { useLanguage } from "@/i18n/language-provider";
 import { localeOptions } from "@/i18n/dictionaries";
 import { ArrowLeft, Plus, Pencil, Trash2, X, Upload, Loader2, CheckCircle2, ImageIcon } from "lucide-react";
 import { QuestionDialog, QuestionData, textFor } from "./question-dialog";
+import { latinToCyrillic } from "@/lib/uzbek-transliterate";
 
 type Material = { id: string; titleJson: any; descriptionJson: any; imageUrl: string | null };
 
@@ -186,6 +187,32 @@ function MaterialDialog({
   const [uploading, setUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const autoGenRef = useRef<Record<string, string>>({});
+
+  function updateContent(value: string) {
+    let cyrOverride: string | null = null;
+    if (activeTab === "uz-latin") {
+      const currentCyr = content["uz-cyrl"];
+      const wasUntouched = !currentCyr || currentCyr === autoGenRef.current["desc"];
+      if (wasUntouched) {
+        cyrOverride = latinToCyrillic(value);
+        autoGenRef.current["desc"] = cyrOverride;
+      }
+    }
+    setContent((prev) => {
+      const next = { ...prev, [activeTab]: value };
+      if (cyrOverride !== null) next["uz-cyrl"] = cyrOverride;
+      return next;
+    });
+  }
+
+  function handleCyrRegenerate() {
+    setContent((prev) => {
+      const generated = latinToCyrillic(prev["uz-latin"]);
+      autoGenRef.current["desc"] = generated;
+      return { ...prev, "uz-cyrl": generated };
+    });
+  }
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -245,12 +272,18 @@ function MaterialDialog({
           ))}
         </div>
 
+        {activeTab === "uz-cyrl" && (
+          <button type="button" onClick={handleCyrRegenerate} className="mb-3 text-xs font-medium text-primary hover:opacity-80">
+            ↻ Lotin asosida qayta hosil qilish
+          </button>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-3">
           <div>
             <label className="mb-1.5 block text-sm font-medium text-foreground">{t("admin.talim.materialDescLabel")}</label>
             <textarea
               value={content[activeTab]}
-              onChange={(e) => setContent((prev) => ({ ...prev, [activeTab]: e.target.value }))}
+              onChange={(e) => updateContent(e.target.value)}
               rows={4}
               className="w-full resize-none rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-ring/50"
             />

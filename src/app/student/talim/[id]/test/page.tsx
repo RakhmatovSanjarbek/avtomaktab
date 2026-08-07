@@ -13,6 +13,7 @@ type Session = {
   startedAt: number;
   answers: Record<string, ShellAnswer>;
   currentIndex: number;
+  bannerText?: string;
 };
 
 export default function TalimTestPage() {
@@ -21,6 +22,7 @@ export default function TalimTestPage() {
   const params = useParams();
   const stageId = params.id as string;
   const storageKey = `talim_session_${stageId}`;
+  const previewKey = `talim_preview_${stageId}`;
 
   const [session, setSession] = useState<Session | null>(null);
   const [finished, setFinished] = useState<{ score: number; total: number } | null>(null);
@@ -28,6 +30,7 @@ export default function TalimTestPage() {
   const [error, setError] = useState(false);
 
   useEffect(() => {
+    // 1) Davom etayotgan sessiya bormi — tekshiramiz
     const raw = localStorage.getItem(storageKey);
     if (raw) {
       try {
@@ -43,6 +46,30 @@ export default function TalimTestPage() {
         localStorage.removeItem(storageKey);
       }
     }
+
+    // 2) "Testni ko'rish" oynasidan kelgan aynan o'sha savollar to'plamini ishlatamiz
+    const previewRaw = sessionStorage.getItem(previewKey);
+    if (previewRaw) {
+      try {
+        const preview = JSON.parse(previewRaw);
+        if (preview.questions?.length > 0) {
+          persist({
+            questions: preview.questions,
+            timeLimitSec: preview.timeLimitSec,
+            startedAt: Date.now(),
+            answers: {},
+            currentIndex: 0,
+            bannerText: preview.bannerText,
+          });
+          setRestored(true);
+          return;
+        }
+      } catch {
+        // davom etamiz, zaxira variantga o'tamiz
+      }
+    }
+
+    // 3) Zaxira: to'g'ridan-to'g'ri kirilgan bo'lsa, yangi tasodifiy to'plam so'raymiz
     startTest();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -111,6 +138,7 @@ export default function TalimTestPage() {
     const data = await res.json();
 
     localStorage.removeItem(storageKey);
+    sessionStorage.removeItem(previewKey);
     setSession(null);
     setFinished({ score: data.result.score, total: data.result.total });
   }
@@ -172,6 +200,7 @@ export default function TalimTestPage() {
       answers={session.answers}
       currentIndex={session.currentIndex}
       confirmMode="direct"
+      topBanner={session.bannerText}
       onAnswer={handleAnswer}
       onNavigate={(i) => persist({ ...session, currentIndex: i })}
       onFinish={() => finishTest(session)}

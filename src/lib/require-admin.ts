@@ -76,3 +76,30 @@ export async function requireApiSectionAccess(sectionKey: string) {
 
   return session;
 }
+
+/**
+ * Bir nechta bo'limdan istalgan biriga ruxsati bo'lsa o'tkazadi.
+ * Masalan: Bosqichli test bo'limi Ta'lim moduli bilan bir xil savollarni ishlatgani uchun,
+ * "talim" YOKI "bosqichli" ruxsati bo'lgan admin ham kira olishi kerak.
+ */
+export async function requireApiAnySectionAccess(sectionKeys: string[]) {
+  const session = await auth();
+  if (!session?.user) return null;
+
+  const role = (session.user as any).role;
+  if (role === "SUPER_ADMIN") return session;
+  if (role !== "ADMIN") return null;
+
+  const isActive = (session.user as any).isActive;
+  const workDays = (session.user as any).workDays as number[] | null;
+  const workStartTime = (session.user as any).workStartTime as string | null;
+  const workEndTime = (session.user as any).workEndTime as string | null;
+  if (!isActive || !isWithinWorkingHours(workDays, workStartTime, workEndTime)) {
+    return null;
+  }
+
+  const allowedSections = ((session.user as any).allowedSections ?? []) as string[];
+  if (!sectionKeys.some((k) => allowedSections.includes(k))) return null;
+
+  return session;
+}

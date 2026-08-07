@@ -45,51 +45,59 @@ export function TalimStageDetail({ stageId }: { stageId: string }) {
           <ArrowLeft className="h-4 w-4" />
           {t("studentTalim.backToStages")}
         </button>
-        <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-        {desc && <p className="mt-1 text-sm text-muted-foreground">{desc}</p>}
+
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+          </div>
+
+          {questionsCount > 0 && (
+            <Link
+              href={`/student/talim/${stageId}/korish`}
+              onClick={() => enterFullscreen()}
+              className="flex shrink-0 items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-lg hover:opacity-90"
+            >
+              <ListChecks className="h-4 w-4" />
+              {t("studentTalim.viewButton")}
+            </Link>
+          )}
+        </div>
       </div>
+
+      {desc && (
+        <div className="rounded-xl bg-primary/10 px-5 py-3.5 text-center text-base font-semibold text-foreground sm:text-lg">
+          {desc}
+        </div>
+      )}
 
       <div className="space-y-3">
         <h2 className="text-sm font-semibold text-foreground">{t("studentTalim.materialsTitle")}</h2>
         {materials.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted-foreground">{t("studentTalim.materialsEmpty")}</p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
             {materials.map((m) => (
               <button
                 key={m.id}
                 type="button"
                 onClick={() => setOpenMaterial(m)}
-                className="group overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+                className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
               >
-                <div className="flex h-40 items-center justify-center bg-secondary/50">
+                <div className="flex h-36 w-full items-center justify-center bg-secondary/30 p-2 sm:h-44">
                   {m.imageUrl ? (
-                    <img src={m.imageUrl} alt="" className="h-full w-full object-cover transition-transform group-hover:scale-[1.03]" />
+                    <img src={m.imageUrl} alt="" className="max-h-full max-w-full object-contain transition-transform group-hover:scale-[1.02]" />
                   ) : (
                     <ImageIcon className="h-10 w-10 text-muted-foreground/40" strokeWidth={1.25} />
                   )}
                 </div>
-                <div className="p-4">
-                  <p className="line-clamp-3 text-sm text-foreground">{textFor(m.titleJson, locale)}</p>
+                <div className="p-3">
+                  <p className="line-clamp-2 text-xs text-foreground sm:text-sm">{textFor(m.titleJson, locale)}</p>
                 </div>
               </button>
             ))}
           </div>
         )}
       </div>
-
-      {questionsCount > 0 && (
-        <div className="flex justify-center pt-2">
-          <Link
-            href={`/student/talim/${stageId}/korish`}
-            onClick={() => enterFullscreen()}
-            className="flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground shadow-lg hover:opacity-90"
-          >
-            <ListChecks className="h-4 w-4" />
-            {t("studentTalim.viewButton")}
-          </Link>
-        </div>
-      )}
 
       {openMaterial && (
         <div
@@ -100,11 +108,11 @@ export function TalimStageDetail({ stageId }: { stageId: string }) {
             className="max-h-[85vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-card shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative">
+            <div className="relative w-full bg-secondary/30">
               {openMaterial.imageUrl ? (
-                <img src={openMaterial.imageUrl} alt="" className="max-h-80 w-full object-contain bg-secondary/30" />
+                <img src={openMaterial.imageUrl} alt="" className="max-h-[60vh] w-full object-contain" />
               ) : (
-                <div className="flex h-40 items-center justify-center bg-secondary/30">
+                <div className="flex h-40 w-full items-center justify-center">
                   <ImageIcon className="h-12 w-12 text-muted-foreground/40" strokeWidth={1.25} />
                 </div>
               )}

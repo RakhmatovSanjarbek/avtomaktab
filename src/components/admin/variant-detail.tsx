@@ -3,8 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useLanguage } from "@/i18n/language-provider";
-import { ArrowLeft, Trash2, CheckCircle2, Link2, Search, Image as ImageIcon } from "lucide-react";
-import { textFor, QuestionData } from "./question-dialog";
+import { ArrowLeft, Trash2, CheckCircle2, Link2, Search, Image as ImageIcon, Pencil } from "lucide-react";
+import { textFor, QuestionData, QuestionDialog } from "./question-dialog";
 
 export function VariantDetail({ variantId }: { variantId: string }) {
   const { t, locale } = useLanguage();
@@ -12,6 +12,8 @@ export function VariantDetail({ variantId }: { variantId: string }) {
   const [questions, setQuestions] = useState<QuestionData[]>([]);
   const [loading, setLoading] = useState(true);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [qDialogOpen, setQDialogOpen] = useState(false);
+  const [editQuestion, setEditQuestion] = useState<QuestionData | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -51,14 +53,23 @@ export function VariantDetail({ variantId }: { variantId: string }) {
         </Link>
         <div className="flex items-center justify-between">
           <h1 className="text-xl font-semibold text-foreground">{title}</h1>
-          <button
-            type="button"
-            onClick={() => setLinkDialogOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            <Link2 className="h-4 w-4" strokeWidth={1.75} />
-            {t("admin.bosqichli.linkQuestionsButton")}
-          </button>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setQDialogOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-card px-3.5 py-2 text-sm font-medium text-foreground hover:bg-secondary"
+            >
+              {t("admin.questions.addQuestionButton")}
+            </button>
+            <button
+              type="button"
+              onClick={() => setLinkDialogOpen(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-primary px-3.5 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              <Link2 className="h-4 w-4" strokeWidth={1.75} />
+              {t("admin.bosqichli.linkQuestionsButton")}
+            </button>
+          </div>
         </div>
         <p className="mt-1 text-xs text-muted-foreground">
           Savollar Ta'lim moduli bazasidan biriktiriladi. Yangi savol qo'shish uchun — Ta'lim moduli bo'limiga o'ting.
@@ -87,10 +98,16 @@ export function VariantDetail({ variantId }: { variantId: string }) {
                     ))}
                   </div>
                 </div>
-                <button type="button" disabled={busyId === q.id} onClick={() => handleUnlink(q.id)}
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 disabled:opacity-40">
-                  <Trash2 className="h-3.5 w-3.5" />
-                </button>
+                <div className="flex shrink-0 gap-1.5">
+                  <button type="button" onClick={() => setEditQuestion(q)}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-border text-muted-foreground hover:bg-secondary hover:text-foreground">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  <button type="button" disabled={busyId === q.id} onClick={() => handleUnlink(q.id)}
+                    className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-destructive/30 text-destructive hover:bg-destructive/10 disabled:opacity-40">
+                    <Trash2 className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
           ))
@@ -98,6 +115,8 @@ export function VariantDetail({ variantId }: { variantId: string }) {
       </div>
 
       {linkDialogOpen && <LinkFromTalimDialog variantId={variantId} onClose={() => setLinkDialogOpen(false)} onDone={() => { setLinkDialogOpen(false); load(); }} />}
+      {qDialogOpen && <QuestionDialog addUrl={`/api/admin/variants/${variantId}/add-question`} onClose={() => setQDialogOpen(false)} onDone={() => { setQDialogOpen(false); load(); }} />}
+      {editQuestion && <QuestionDialog addUrl="" question={editQuestion} onClose={() => setEditQuestion(null)} onDone={() => { setEditQuestion(null); load(); }} />}
     </div>
   );
 }

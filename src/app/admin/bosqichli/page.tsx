@@ -35,7 +35,7 @@ export default async function AdminBosqichliInfoPage() {
           {stages.map((s, idx) => (
             <Link
               key={s.id}
-              href={`/admin/talim/${s.id}`}
+              href={`/admin/bosqichli/${s.id}`}
               className="group flex items-start gap-4 rounded-2xl border border-border bg-card p-5 shadow-sm transition-colors hover:bg-secondary/50"
             >
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/10">
