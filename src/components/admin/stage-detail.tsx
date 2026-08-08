@@ -188,9 +188,11 @@ function MaterialDialog({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const autoGenRef = useRef<Record<string, string>>({});
+  const ruAutoGenRef = useRef<Record<string, string>>({});
 
   function updateContent(value: string) {
     let cyrOverride: string | null = null;
+    let ruOverride: string | null = null;
     if (activeTab === "uz-latin") {
       const currentCyr = content["uz-cyrl"];
       const wasUntouched = !currentCyr || currentCyr === autoGenRef.current["desc"];
@@ -198,10 +200,17 @@ function MaterialDialog({
         cyrOverride = latinToCyrillic(value);
         autoGenRef.current["desc"] = cyrOverride;
       }
+      const currentRu = content["ru"];
+      const ruWasUntouched = !currentRu || currentRu === ruAutoGenRef.current["desc"];
+      if (ruWasUntouched) {
+        ruOverride = value;
+        ruAutoGenRef.current["desc"] = value;
+      }
     }
     setContent((prev) => {
       const next = { ...prev, [activeTab]: value };
       if (cyrOverride !== null) next["uz-cyrl"] = cyrOverride;
+      if (ruOverride !== null) next["ru"] = ruOverride;
       return next;
     });
   }

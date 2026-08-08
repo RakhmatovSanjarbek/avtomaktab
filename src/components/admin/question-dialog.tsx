@@ -63,11 +63,13 @@ export function QuestionDialog({
   });
 
   const autoGenRef = useRef<Record<string, string>>({});
+  const ruAutoGenRef = useRef<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
   function updateField(field: "text" | "explanation", value: string) {
     let cyrOverride: string | null = null;
+    let ruOverride: string | null = null;
     if (activeTab === "uz-latin") {
       const key = `field-${field}`;
       const currentCyr = langs["uz-cyrl"][field];
@@ -76,6 +78,12 @@ export function QuestionDialog({
         cyrOverride = latinToCyrillic(value);
         autoGenRef.current[key] = cyrOverride;
       }
+      const currentRu = langs["ru"][field];
+      const ruWasUntouched = !currentRu || currentRu === ruAutoGenRef.current[key];
+      if (ruWasUntouched) {
+        ruOverride = value;
+        ruAutoGenRef.current[key] = value;
+      }
     }
 
     setLangs((prev) => {
@@ -83,12 +91,16 @@ export function QuestionDialog({
       if (cyrOverride !== null) {
         next["uz-cyrl"] = { ...next["uz-cyrl"], [field]: cyrOverride };
       }
+      if (ruOverride !== null) {
+        next["ru"] = { ...next["ru"], [field]: ruOverride };
+      }
       return next;
     });
   }
 
   function updateOption(i: number, value: string) {
     let cyrOverride: string | null = null;
+    let ruOverride: string | null = null;
     if (activeTab === "uz-latin") {
       const key = `option-${i}`;
       const currentCyr = langs["uz-cyrl"].options[i] ?? "";
@@ -96,6 +108,12 @@ export function QuestionDialog({
       if (wasUntouched) {
         cyrOverride = latinToCyrillic(value);
         autoGenRef.current[key] = cyrOverride;
+      }
+      const currentRu = langs["ru"].options[i] ?? "";
+      const ruWasUntouched = !currentRu || currentRu === ruAutoGenRef.current[key];
+      if (ruWasUntouched) {
+        ruOverride = value;
+        ruAutoGenRef.current[key] = value;
       }
     }
 
@@ -107,6 +125,11 @@ export function QuestionDialog({
         const cyrOpts = [...next["uz-cyrl"].options];
         cyrOpts[i] = cyrOverride;
         next["uz-cyrl"] = { ...next["uz-cyrl"], options: cyrOpts };
+      }
+      if (ruOverride !== null) {
+        const ruOpts = [...next["ru"].options];
+        ruOpts[i] = ruOverride;
+        next["ru"] = { ...next["ru"], options: ruOpts };
       }
       return next;
     });
